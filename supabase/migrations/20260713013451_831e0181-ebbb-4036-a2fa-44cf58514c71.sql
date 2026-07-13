@@ -1,0 +1,4 @@
+ALTER TABLE public.stages
+  ADD COLUMN IF NOT EXISTS webhook_url TEXT,
+  ADD COLUMN IF NOT EXISTS message_template TEXT,
+  ADD COLUMN IF NOT EXISTS trigger_webhook BOOLEAN NOT NULL DEFAULT false;
