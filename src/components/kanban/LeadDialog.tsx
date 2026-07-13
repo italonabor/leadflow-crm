@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, MessageCircle } from "lucide-react";
+import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import type { Lead, Stage } from "./types";
 
 type Props = {
