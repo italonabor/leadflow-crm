@@ -55,7 +55,7 @@ function BoardPage() {
       const lead = (leadsQ.data ?? []).find((l) => l.id === id);
       const stage = (stagesQ.data ?? []).find((s) => s.id === stage_id);
       if (stage?.trigger_webhook && stage.webhook_url && lead) {
-        const message = renderTemplate(stage.message_template, { ...lead, stage_id });
+        const message = renderTemplate(stage.message_template, lead);
         try {
           await fetch(stage.webhook_url, {
             method: "POST",
