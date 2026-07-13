@@ -231,6 +231,9 @@ function BoardPage() {
               <DropdownMenuItem onClick={() => downloadTemplate()}>
                 <FileDown className="mr-2 h-4 w-4" /> Baixar modelo Excel
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/integrations" })}>
+                <Workflow className="mr-2 h-4 w-4" /> Integração n8n / WhatsApp
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" /> Sair
