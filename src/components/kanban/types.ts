@@ -4,6 +4,9 @@ export type Stage = {
   name: string;
   color: string;
   position: number;
+  webhook_url: string | null;
+  message_template: string | null;
+  trigger_webhook: boolean;
 };
 
 export type Lead = {

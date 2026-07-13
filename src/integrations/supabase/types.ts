@@ -90,25 +90,34 @@ export type Database = {
           color: string
           created_at: string
           id: string
+          message_template: string | null
           name: string
           position: number
+          trigger_webhook: boolean
           user_id: string
+          webhook_url: string | null
         }
         Insert: {
           color?: string
           created_at?: string
           id?: string
+          message_template?: string | null
           name: string
           position?: number
+          trigger_webhook?: boolean
           user_id: string
+          webhook_url?: string | null
         }
         Update: {
           color?: string
           created_at?: string
           id?: string
+          message_template?: string | null
           name?: string
           position?: number
+          trigger_webhook?: boolean
           user_id?: string
+          webhook_url?: string | null
         }
         Relationships: []
       }

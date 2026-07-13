@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, MessageCircle } from "lucide-react";
+import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import type { Lead, Stage } from "./types";
 
 type Props = {
@@ -130,6 +131,22 @@ export function LeadDialog({ userId, stages, lead, defaultStageId, open, onOpenC
             <Label>Observações</Label>
             <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
+          {form.telefone && (
+            <a
+              href={buildWhatsAppLink(
+                form.telefone,
+                renderTemplate(
+                  stages.find((s) => s.id === form.stage_id)?.message_template,
+                  { nome: form.nome, profissao: form.profissao || null, telefone: form.telefone || null, rede_social: form.rede_social || null, link: form.link || null },
+                ),
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/20"
+            >
+              <MessageCircle className="h-4 w-4" /> Abrir WhatsApp
+            </a>
+          )}
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
           {lead ? (

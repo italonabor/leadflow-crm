@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
 import type { Stage } from "./types";
@@ -27,15 +29,25 @@ export function StageDialog({
   const qc = useQueryClient();
   const [name, setName] = useState(stage?.name ?? "");
   const [color, setColor] = useState(stage?.color ?? PRESET_COLORS[0]);
+  const [messageTemplate, setMessageTemplate] = useState(stage?.message_template ?? "");
+  const [webhookUrl, setWebhookUrl] = useState(stage?.webhook_url ?? "");
+  const [triggerWebhook, setTriggerWebhook] = useState(stage?.trigger_webhook ?? false);
 
   const save = useMutation({
     mutationFn: async () => {
       if (!name.trim()) throw new Error("Nome é obrigatório");
+      const payload = {
+        name,
+        color,
+        message_template: messageTemplate.trim() || null,
+        webhook_url: webhookUrl.trim() || null,
+        trigger_webhook: triggerWebhook && !!webhookUrl.trim(),
+      };
       if (stage) {
-        const { error } = await supabase.from("stages").update({ name, color }).eq("id", stage.id);
+        const { error } = await supabase.from("stages").update(payload).eq("id", stage.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("stages").insert({ user_id: userId, name, color, position: nextPosition });
+        const { error } = await supabase.from("stages").insert({ user_id: userId, position: nextPosition, ...payload });
         if (error) throw error;
       }
     },
@@ -64,11 +76,11 @@ export function StageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{stage ? "Editar etapa" : "Nova etapa"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4">
+        <div className="grid max-h-[70vh] gap-4 overflow-y-auto pr-1">
           <div className="grid gap-2">
             <Label>Nome</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Proposta enviada" />
@@ -85,6 +97,44 @@ export function StageDialog({
                   style={{ backgroundColor: c, borderColor: color === c ? "white" : "transparent" }}
                 />
               ))}
+            </div>
+          </div>
+
+          <div className="mt-2 rounded-lg border border-border/60 bg-surface/40 p-3">
+            <div className="mb-3 text-sm font-semibold">WhatsApp & Automação</div>
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <Label>Mensagem-modelo do WhatsApp</Label>
+                <Textarea
+                  rows={3}
+                  value={messageTemplate}
+                  onChange={(e) => setMessageTemplate(e.target.value)}
+                  placeholder="Olá {nome}, tudo bem?"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Placeholders: <code>{"{nome}"}</code>, <code>{"{profissao}"}</code>, <code>{"{telefone}"}</code>,{" "}
+                  <code>{"{rede_social}"}</code>, <code>{"{link}"}</code>
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label>Webhook n8n (opcional)</Label>
+                <Input
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://seu-n8n/webhook/..."
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-sm">Disparar webhook ao mover lead para esta etapa</Label>
+                  <p className="text-xs text-muted-foreground">Requer URL de webhook.</p>
+                </div>
+                <Switch
+                  checked={triggerWebhook}
+                  onCheckedChange={setTriggerWebhook}
+                  disabled={!webhookUrl.trim()}
+                />
+              </div>
             </div>
           </div>
         </div>
