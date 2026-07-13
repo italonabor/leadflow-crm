@@ -4,7 +4,7 @@ import type { Lead, Stage } from "./types";
 import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
-export function LeadCard({ lead, onEdit }: { lead: Lead; onEdit: () => void }) {
+export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => void; stage?: Stage }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { type: "lead", lead },
