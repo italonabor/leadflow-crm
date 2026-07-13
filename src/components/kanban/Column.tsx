@@ -129,7 +129,7 @@ export function Column({
             Solte um lead aqui
           </div>
         ) : (
-          leads.map((lead) => <LeadCard key={lead.id} lead={lead} onEdit={() => onEditLead(lead)} />)
+          leads.map((lead) => <LeadCard key={lead.id} lead={lead} stage={stage} onEdit={() => onEditLead(lead)} />)
         )}
       </div>
     </div>
