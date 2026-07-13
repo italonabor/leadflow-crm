@@ -35,13 +35,27 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h4 className="truncate font-semibold">{lead.nome}</h4>
-            <button
-              onClick={onEdit}
-              className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-surface-2 hover:text-foreground group-hover:opacity-100"
-              aria-label="Editar"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
+            <div className="flex shrink-0 items-center gap-0.5">
+              {lead.telefone && (
+                <a
+                  href={buildWhatsAppLink(lead.telefone, renderTemplate(stage?.message_template, lead))}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="rounded p-1 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
+                  aria-label="Abrir WhatsApp"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                </a>
+              )}
+              <button
+                onClick={onEdit}
+                className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-surface-2 hover:text-foreground group-hover:opacity-100"
+                aria-label="Editar"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
           <div className="mt-2 space-y-1 text-xs text-muted-foreground">
             {lead.profissao && (
