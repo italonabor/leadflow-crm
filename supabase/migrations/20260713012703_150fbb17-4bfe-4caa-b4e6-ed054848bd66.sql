@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ALTER COLUMN position TYPE BIGINT; ALTER TABLE public.stages ALTER COLUMN position TYPE BIGINT;
