@@ -51,6 +51,36 @@ function BoardPage() {
     mutationFn: async ({ id, stage_id }: { id: string; stage_id: string }) => {
       const { error } = await supabase.from("leads").update({ stage_id, position: Date.now() }).eq("id", id);
       if (error) throw error;
+      // Fire n8n webhook if the destination stage has one configured.
+      const lead = (leadsQ.data ?? []).find((l) => l.id === id);
+      const stage = (stagesQ.data ?? []).find((s) => s.id === stage_id);
+      if (stage?.trigger_webhook && stage.webhook_url && lead) {
+        const message = renderTemplate(stage.message_template, { ...lead, stage_id });
+        try {
+          await fetch(stage.webhook_url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event: "lead.stage_changed",
+              stage: { id: stage.id, name: stage.name },
+              lead: {
+                id: lead.id,
+                nome: lead.nome,
+                profissao: lead.profissao,
+                telefone: lead.telefone,
+                rede_social: lead.rede_social,
+                link: lead.link,
+                notes: lead.notes,
+              },
+              message_template: stage.message_template,
+              message,
+            }),
+          });
+          toast.success(`Webhook disparado: ${stage.name}`);
+        } catch (err) {
+          toast.error("Webhook falhou: " + (err instanceof Error ? err.message : "erro desconhecido"));
+        }
+      }
     },
     onMutate: async ({ id, stage_id }) => {
       await qc.cancelQueries({ queryKey: ["leads", user.id] });
