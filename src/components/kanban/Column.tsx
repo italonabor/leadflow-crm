@@ -72,7 +72,18 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
               <div className="flex items-center gap-1.5 truncate"><Briefcase className="h-3 w-3 shrink-0" />{lead.profissao}</div>
             )}
             {lead.telefone && (
-              <div className="flex items-center gap-1.5 truncate"><Phone className="h-3 w-3 shrink-0" />{lead.telefone}</div>
+              <div className="flex items-center gap-1.5 truncate">
+                <Phone className="h-3 w-3 shrink-0" />
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); copyToClipboard(lead.telefone!); }}
+                  className="truncate hover:text-foreground hover:underline"
+                  title="Clique para copiar"
+                >
+                  {lead.telefone}
+                </button>
+                <Copy className="h-3 w-3 shrink-0 opacity-40" />
+              </div>
             )}
             {lead.rede_social && (
               <div className="flex items-center gap-1.5 truncate"><AtSign className="h-3 w-3 shrink-0" />{lead.rede_social}</div>
