@@ -1,5 +1,6 @@
 export type Stage = {
   id: string;
+  workspace_id: string;
   user_id: string;
   name: string;
   color: string;
@@ -11,7 +12,9 @@ export type Stage = {
 
 export type Lead = {
   id: string;
+  workspace_id: string;
   user_id: string;
+  assigned_to: string | null;
   stage_id: string;
   nome: string;
   profissao: string | null;
