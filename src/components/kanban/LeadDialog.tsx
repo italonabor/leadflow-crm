@@ -53,7 +53,9 @@ export function LeadDialog({ userId, stages, lead, defaultStageId, open, onOpenC
         if (error) throw error;
       } else {
         const { error } = await supabase.from("leads").insert({
+          workspace_id: workspaceId,
           user_id: userId,
+          assigned_to: userId,
           nome: form.nome,
           profissao: form.profissao || null,
           telefone: form.telefone || null,
