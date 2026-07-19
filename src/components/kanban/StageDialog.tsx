@@ -15,12 +15,14 @@ const PRESET_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#
 
 export function StageDialog({
   userId,
+  workspaceId,
   stage,
   nextPosition,
   open,
   onOpenChange,
 }: {
   userId: string;
+  workspaceId: string;
   stage?: Stage;
   nextPosition: number;
   open: boolean;
