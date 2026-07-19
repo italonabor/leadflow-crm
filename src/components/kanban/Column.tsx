@@ -1,8 +1,18 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Phone, Link as LinkIcon, AtSign, Briefcase, GripVertical, Pencil, MessageCircle } from "lucide-react";
+import { Phone, Link as LinkIcon, AtSign, Briefcase, GripVertical, Pencil, MessageCircle, Copy } from "lucide-react";
 import type { Lead, Stage } from "./types";
 import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Copiado: " + text);
+  } catch {
+    toast.error("Não foi possível copiar");
+  }
+}
 
 export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => void; stage?: Stage }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
