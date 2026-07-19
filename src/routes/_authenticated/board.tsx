@@ -147,8 +147,14 @@ function BoardPage() {
         toast.error("Crie uma etapa primeiro");
         return;
       }
+      if (!workspaceId) {
+        toast.error("Workspace não carregado");
+        return;
+      }
       const payload = rows.map((r, i) => ({
+        workspace_id: workspaceId,
         user_id: user.id,
+        assigned_to: user.id,
         stage_id: (r.stage && stageByName.get(r.stage.toLowerCase())) || defaultStage,
         nome: r.nome,
         profissao: r.profissao,
