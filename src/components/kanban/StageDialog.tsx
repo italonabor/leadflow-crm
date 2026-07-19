@@ -15,12 +15,14 @@ const PRESET_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#
 
 export function StageDialog({
   userId,
+  workspaceId,
   stage,
   nextPosition,
   open,
   onOpenChange,
 }: {
   userId: string;
+  workspaceId: string;
   stage?: Stage;
   nextPosition: number;
   open: boolean;
@@ -47,7 +49,7 @@ export function StageDialog({
         const { error } = await supabase.from("stages").update(payload).eq("id", stage.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("stages").insert({ user_id: userId, position: nextPosition, ...payload });
+        const { error } = await supabase.from("stages").insert({ workspace_id: workspaceId, user_id: userId, position: nextPosition, ...payload });
         if (error) throw error;
       }
     },

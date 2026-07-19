@@ -14,6 +14,7 @@ import type { Lead, Stage } from "./types";
 
 type Props = {
   userId: string;
+  workspaceId: string;
   stages: Stage[];
   lead?: Lead;
   defaultStageId?: string;
@@ -21,7 +22,7 @@ type Props = {
   onOpenChange: (o: boolean) => void;
 };
 
-export function LeadDialog({ userId, stages, lead, defaultStageId, open, onOpenChange }: Props) {
+export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, open, onOpenChange }: Props) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     nome: lead?.nome ?? "",
@@ -52,7 +53,9 @@ export function LeadDialog({ userId, stages, lead, defaultStageId, open, onOpenC
         if (error) throw error;
       } else {
         const { error } = await supabase.from("leads").insert({
+          workspace_id: workspaceId,
           user_id: userId,
+          assigned_to: userId,
           nome: form.nome,
           profissao: form.profissao || null,
           telefone: form.telefone || null,

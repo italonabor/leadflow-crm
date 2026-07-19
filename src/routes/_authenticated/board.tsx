@@ -13,6 +13,7 @@ import { downloadTemplate, exportLeadsToExcel, parseLeadsFile } from "@/lib/exce
 import { toast } from "sonner";
 import { Download, Upload, Plus, Kanban, LogOut, FileDown, Loader2, Workflow } from "lucide-react";
 import { renderTemplate } from "@/lib/whatsapp";
+import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
 
 export const Route = createFileRoute("/_authenticated/board")({
   component: BoardPage,
@@ -24,6 +25,9 @@ function BoardPage() {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+
+  const workspaceQ = useActiveWorkspace(user.id);
+  const workspaceId = workspaceQ.data?.id;
 
   const [leadDialog, setLeadDialog] = useState<{ open: boolean; lead?: Lead; stageId?: string }>({ open: false });
   const [stageDialog, setStageDialog] = useState<{ open: boolean; stage?: Stage }>({ open: false });
@@ -143,8 +147,14 @@ function BoardPage() {
         toast.error("Crie uma etapa primeiro");
         return;
       }
+      if (!workspaceId) {
+        toast.error("Workspace não carregado");
+        return;
+      }
       const payload = rows.map((r, i) => ({
+        workspace_id: workspaceId,
         user_id: user.id,
+        assigned_to: user.id,
         stage_id: (r.stage && stageByName.get(r.stage.toLowerCase())) || defaultStage,
         nome: r.nome,
         profissao: r.profissao,
@@ -276,10 +286,11 @@ function BoardPage() {
         )}
       </main>
 
-      {leadDialog.open && (
+      {leadDialog.open && workspaceId && (
         <LeadDialog
           key={leadDialog.lead?.id ?? leadDialog.stageId ?? "new"}
           userId={user.id}
+          workspaceId={workspaceId}
           stages={stages}
           lead={leadDialog.lead}
           defaultStageId={leadDialog.stageId}
@@ -287,10 +298,11 @@ function BoardPage() {
           onOpenChange={(o) => setLeadDialog({ open: o })}
         />
       )}
-      {stageDialog.open && (
+      {stageDialog.open && workspaceId && (
         <StageDialog
           key={stageDialog.stage?.id ?? "new-stage"}
           userId={user.id}
+          workspaceId={workspaceId}
           stage={stageDialog.stage}
           nextPosition={nextStagePos}
           open={stageDialog.open}

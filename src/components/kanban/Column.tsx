@@ -1,8 +1,18 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Phone, Link as LinkIcon, AtSign, Briefcase, GripVertical, Pencil, MessageCircle } from "lucide-react";
+import { Phone, Link as LinkIcon, AtSign, Briefcase, GripVertical, Pencil, MessageCircle, Copy } from "lucide-react";
 import type { Lead, Stage } from "./types";
 import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Copiado: " + text);
+  } catch {
+    toast.error("Não foi possível copiar");
+  }
+}
 
 export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => void; stage?: Stage }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -62,7 +72,18 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
               <div className="flex items-center gap-1.5 truncate"><Briefcase className="h-3 w-3 shrink-0" />{lead.profissao}</div>
             )}
             {lead.telefone && (
-              <div className="flex items-center gap-1.5 truncate"><Phone className="h-3 w-3 shrink-0" />{lead.telefone}</div>
+              <div className="flex items-center gap-1.5 truncate">
+                <Phone className="h-3 w-3 shrink-0" />
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); copyToClipboard(lead.telefone!); }}
+                  className="truncate hover:text-foreground hover:underline"
+                  title="Clique para copiar"
+                >
+                  {lead.telefone}
+                </button>
+                <Copy className="h-3 w-3 shrink-0 opacity-40" />
+              </div>
             )}
             {lead.rede_social && (
               <div className="flex items-center gap-1.5 truncate"><AtSign className="h-3 w-3 shrink-0" />{lead.rede_social}</div>
