@@ -286,10 +286,11 @@ function BoardPage() {
         )}
       </main>
 
-      {leadDialog.open && (
+      {leadDialog.open && workspaceId && (
         <LeadDialog
           key={leadDialog.lead?.id ?? leadDialog.stageId ?? "new"}
           userId={user.id}
+          workspaceId={workspaceId}
           stages={stages}
           lead={leadDialog.lead}
           defaultStageId={leadDialog.stageId}
@@ -297,10 +298,11 @@ function BoardPage() {
           onOpenChange={(o) => setLeadDialog({ open: o })}
         />
       )}
-      {stageDialog.open && (
+      {stageDialog.open && workspaceId && (
         <StageDialog
           key={stageDialog.stage?.id ?? "new-stage"}
           userId={user.id}
+          workspaceId={workspaceId}
           stage={stageDialog.stage}
           nextPosition={nextStagePos}
           open={stageDialog.open}
