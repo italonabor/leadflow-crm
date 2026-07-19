@@ -14,6 +14,7 @@ import type { Lead, Stage } from "./types";
 
 type Props = {
   userId: string;
+  workspaceId: string;
   stages: Stage[];
   lead?: Lead;
   defaultStageId?: string;
