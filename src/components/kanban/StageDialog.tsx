@@ -49,7 +49,7 @@ export function StageDialog({
         const { error } = await supabase.from("stages").update(payload).eq("id", stage.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("stages").insert({ user_id: userId, position: nextPosition, ...payload });
+        const { error } = await supabase.from("stages").insert({ workspace_id: workspaceId, user_id: userId, position: nextPosition, ...payload });
         if (error) throw error;
       }
     },
