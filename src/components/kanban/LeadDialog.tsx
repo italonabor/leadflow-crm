@@ -22,7 +22,7 @@ type Props = {
   onOpenChange: (o: boolean) => void;
 };
 
-export function LeadDialog({ userId, stages, lead, defaultStageId, open, onOpenChange }: Props) {
+export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, open, onOpenChange }: Props) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     nome: lead?.nome ?? "",
