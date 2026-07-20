@@ -242,6 +242,9 @@ function BoardPage() {
               <DropdownMenuItem onClick={() => downloadTemplate()}>
                 <FileDown className="mr-2 h-4 w-4" /> Baixar modelo Excel
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/team" })}>
+                <Users className="mr-2 h-4 w-4" /> Equipe / Atendentes
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/integrations" })}>
                 <Workflow className="mr-2 h-4 w-4" /> Integração n8n / WhatsApp
               </DropdownMenuItem>
