@@ -162,6 +162,41 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
   );
 }
 
+function WhatsAppActions({ phone, message }: { phone: string; message: string }) {
+  const send = useServerFn(sendWhatsAppCloudMessage);
+  const [sending, setSending] = useState(false);
+
+  async function sendCloud() {
+    if (!message.trim()) return toast.error("Escreva uma mensagem-modelo na etapa antes de enviar.");
+    setSending(true);
+    try {
+      await send({ data: { to: phone, message } });
+      toast.success("Mensagem enviada pelo WhatsApp Business");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha no envio");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      <a
+        href={buildWhatsAppLink(phone, message)}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center justify-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/20"
+      >
+        <MessageCircle className="h-4 w-4" /> Abrir no WhatsApp
+      </a>
+      <Button type="button" variant="outline" onClick={sendCloud} disabled={sending}>
+        {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+        Enviar via WhatsApp Business
+      </Button>
+    </div>
+  );
+}
+
 export function LeadDialogTrigger({ children, ...props }: Props & { children: React.ReactNode }) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
