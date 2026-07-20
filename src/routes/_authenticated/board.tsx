@@ -257,6 +257,8 @@ function BoardPage() {
         </div>
       </header>
 
+      <InviteBanner userId={user.id} />
+
       <main className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6">
         {stagesQ.isLoading || leadsQ.isLoading ? (
           <div className="grid h-full place-items-center">
