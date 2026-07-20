@@ -11,9 +11,10 @@ import { StageDialog } from "@/components/kanban/StageDialog";
 import type { Lead, Stage } from "@/components/kanban/types";
 import { downloadTemplate, exportLeadsToExcel, parseLeadsFile } from "@/lib/excel";
 import { toast } from "sonner";
-import { Download, Upload, Plus, Kanban, LogOut, FileDown, Loader2, Workflow } from "lucide-react";
+import { Download, Upload, Plus, Kanban, LogOut, FileDown, Loader2, Workflow, Users } from "lucide-react";
 import { renderTemplate } from "@/lib/whatsapp";
 import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
+import { InviteBanner } from "@/components/team/InviteBanner";
 
 export const Route = createFileRoute("/_authenticated/board")({
   component: BoardPage,
