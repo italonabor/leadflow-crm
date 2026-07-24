@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Workflow, MessageCircle, Copy } from "lucide-react";
+import { MessageCircle, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { AppShell, PageContainer } from "@/components/layout/AppShell";
 
 export const Route = createFileRoute("/_authenticated/integrations")({
   component: IntegrationsPage,
@@ -24,23 +25,15 @@ const SAMPLE_PAYLOAD = `{
 }`;
 
 function IntegrationsPage() {
+  const { user } = Route.useRouteContext();
   const copyPayload = async () => {
     await navigator.clipboard.writeText(SAMPLE_PAYLOAD);
     toast.success("Payload copiado");
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="glass flex items-center justify-between border-b border-border/60 px-4 py-3 sm:px-6">
-        <Link to="/board" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Voltar ao board
-        </Link>
-        <div className="flex items-center gap-2 font-display font-semibold">
-          <Workflow className="h-5 w-5 text-primary" /> Integrações
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <AppShell user={user} title="Integrações · n8n">
+      <PageContainer>
         <h1 className="font-display text-2xl font-bold">n8n + WhatsApp</h1>
         <p className="mt-2 text-muted-foreground">
           O Prospecta abre conversas no WhatsApp direto do card do lead (click-to-chat).
@@ -92,9 +85,7 @@ function IntegrationsPage() {
           </Card>
 
           <Card step={5} title="Envie o WhatsApp dentro do n8n">
-            <p>
-              No mesmo workflow, adicione um nó de envio de mensagem — por exemplo:
-            </p>
+            <p>No mesmo workflow, adicione um nó de envio de mensagem — por exemplo:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
               <li><b>Evolution API</b> (open-source): nó HTTP Request para <code>POST /message/sendText/&lt;instance&gt;</code></li>
               <li><b>Z-API</b> / <b>UltraMsg</b> / <b>Twilio WhatsApp</b>: use o nó HTTP Request com o token</li>
@@ -123,8 +114,8 @@ function IntegrationsPage() {
             documentação do nó Webhook do n8n
           </a>.
         </div>
-      </main>
-    </div>
+      </PageContainer>
+    </AppShell>
   );
 }
 
