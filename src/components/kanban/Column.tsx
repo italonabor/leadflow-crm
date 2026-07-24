@@ -121,12 +121,12 @@ export function Column({
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col">
-      <div className="mb-3 flex items-center justify-between px-1">
+    <div className="flex h-full w-72 shrink-0 flex-col">
+      <div className="mb-2 flex items-center justify-between px-1">
         <button onClick={onEditStage} className="group flex min-w-0 items-center gap-2 text-left">
-          <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
-          <span className="truncate font-display font-semibold group-hover:text-primary">{stage.name}</span>
-          <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{leads.length}</span>
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
+          <span className="truncate font-display text-sm font-semibold group-hover:text-primary">{stage.name}</span>
+          <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{leads.length}</span>
         </button>
         <button
           onClick={onAddLead}
@@ -139,15 +139,16 @@ export function Column({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex-1 space-y-2 overflow-y-auto rounded-xl border border-border/60 bg-surface/40 p-2 transition",
+          "flex-1 space-y-1.5 overflow-y-auto rounded-xl border border-border/60 bg-surface/40 p-1.5 transition",
           isOver && "border-primary/60 bg-primary/5",
         )}
         style={{ minHeight: 200 }}
       >
         {leads.length === 0 ? (
-          <div className="grid h-24 place-items-center rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground">
+          <div className="grid h-20 place-items-center rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground">
             Solte um lead aqui
           </div>
+
         ) : (
           leads.map((lead) => <LeadCard key={lead.id} lead={lead} stage={stage} onEdit={() => onEditLead(lead)} />)
         )}
