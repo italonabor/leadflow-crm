@@ -29,22 +29,22 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group rounded-lg border border-border/70 bg-card p-3 shadow-card transition",
+        "group rounded-md border border-border/70 bg-card px-2 py-1.5 shadow-card transition hover:border-primary/40",
         isDragging && "opacity-40",
       )}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           {...listeners}
           {...attributes}
-          className="mt-0.5 cursor-grab touch-none text-muted-foreground/60 opacity-0 transition group-hover:opacity-100 active:cursor-grabbing"
+          className="cursor-grab touch-none text-muted-foreground/50 opacity-0 transition group-hover:opacity-100 active:cursor-grabbing"
           aria-label="Arrastar"
         >
-          <GripVertical className="h-4 w-4" />
+          <GripVertical className="h-3 w-3" />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="truncate font-semibold">{lead.nome}</h4>
+          <div className="flex items-center justify-between gap-1.5">
+            <h4 className="truncate text-[13px] font-semibold leading-tight">{lead.nome}</h4>
             <div className="flex shrink-0 items-center gap-0.5">
               {lead.telefone && (
                 <a
@@ -52,51 +52,49 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="rounded p-1 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
+                  className="rounded p-0.5 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
                   aria-label="Abrir WhatsApp"
                 >
-                  <MessageCircle className="h-3.5 w-3.5" />
+                  <MessageCircle className="h-3 w-3" />
                 </a>
               )}
               <button
                 onClick={onEdit}
-                className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-surface-2 hover:text-foreground group-hover:opacity-100"
+                className="rounded p-0.5 text-muted-foreground opacity-0 transition hover:bg-surface-2 hover:text-foreground group-hover:opacity-100"
                 aria-label="Editar"
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <Pencil className="h-3 w-3" />
               </button>
             </div>
           </div>
-          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-tight text-muted-foreground">
             {lead.profissao && (
-              <div className="flex items-center gap-1.5 truncate"><Briefcase className="h-3 w-3 shrink-0" />{lead.profissao}</div>
+              <span className="flex min-w-0 items-center gap-1 truncate"><Briefcase className="h-2.5 w-2.5 shrink-0" />{lead.profissao}</span>
             )}
             {lead.telefone && (
-              <div className="flex items-center gap-1.5 truncate">
-                <Phone className="h-3 w-3 shrink-0" />
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); copyToClipboard(lead.telefone!); }}
-                  className="truncate hover:text-foreground hover:underline"
-                  title="Clique para copiar"
-                >
-                  {lead.telefone}
-                </button>
-                <Copy className="h-3 w-3 shrink-0 opacity-40" />
-              </div>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); copyToClipboard(lead.telefone!); }}
+                className="flex min-w-0 items-center gap-1 truncate hover:text-foreground"
+                title="Clique para copiar"
+              >
+                <Phone className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{lead.telefone}</span>
+                <Copy className="h-2.5 w-2.5 shrink-0 opacity-40" />
+              </button>
             )}
             {lead.rede_social && (
-              <div className="flex items-center gap-1.5 truncate"><AtSign className="h-3 w-3 shrink-0" />{lead.rede_social}</div>
+              <span className="flex min-w-0 items-center gap-1 truncate"><AtSign className="h-2.5 w-2.5 shrink-0" />{lead.rede_social}</span>
             )}
             {lead.link && (
               <a
                 href={lead.link}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 truncate text-primary hover:underline"
+                className="flex min-w-0 items-center gap-1 truncate text-primary hover:underline"
                 onClick={(e) => e.stopPropagation()}
               >
-                <LinkIcon className="h-3 w-3 shrink-0" />{lead.link}
+                <LinkIcon className="h-2.5 w-2.5 shrink-0" /><span className="truncate">{lead.link}</span>
               </a>
             )}
           </div>
@@ -105,6 +103,7 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
     </div>
   );
 }
+
 
 export function Column({
   stage,
@@ -122,12 +121,12 @@ export function Column({
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col">
-      <div className="mb-3 flex items-center justify-between px-1">
+    <div className="flex h-full w-72 shrink-0 flex-col">
+      <div className="mb-2 flex items-center justify-between px-1">
         <button onClick={onEditStage} className="group flex min-w-0 items-center gap-2 text-left">
-          <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
-          <span className="truncate font-display font-semibold group-hover:text-primary">{stage.name}</span>
-          <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{leads.length}</span>
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
+          <span className="truncate font-display text-sm font-semibold group-hover:text-primary">{stage.name}</span>
+          <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{leads.length}</span>
         </button>
         <button
           onClick={onAddLead}
@@ -140,15 +139,16 @@ export function Column({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex-1 space-y-2 overflow-y-auto rounded-xl border border-border/60 bg-surface/40 p-2 transition",
+          "flex-1 space-y-1.5 overflow-y-auto rounded-xl border border-border/60 bg-surface/40 p-1.5 transition",
           isOver && "border-primary/60 bg-primary/5",
         )}
         style={{ minHeight: 200 }}
       >
         {leads.length === 0 ? (
-          <div className="grid h-24 place-items-center rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground">
+          <div className="grid h-20 place-items-center rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground">
             Solte um lead aqui
           </div>
+
         ) : (
           leads.map((lead) => <LeadCard key={lead.id} lead={lead} stage={stage} onEdit={() => onEditLead(lead)} />)
         )}
