@@ -1,20 +1,26 @@
 import { useMemo, useRef, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Column, LeadCard } from "@/components/kanban/Column";
 import { LeadDialog } from "@/components/kanban/LeadDialog";
 import { StageDialog } from "@/components/kanban/StageDialog";
 import type { Lead, Stage } from "@/components/kanban/types";
 import { downloadTemplate, exportLeadsToExcel, parseLeadsFile } from "@/lib/excel";
 import { toast } from "sonner";
-import { Download, Upload, Plus, Kanban, LogOut, FileDown, Loader2, Workflow, Users } from "lucide-react";
+import { Download, Upload, Plus, FileDown, Loader2, Users as UsersIcon, TrendingUp } from "lucide-react";
 import { renderTemplate } from "@/lib/whatsapp";
 import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
 import { InviteBanner } from "@/components/team/InviteBanner";
+import { AppShell } from "@/components/layout/AppShell";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/board")({
   component: BoardPage,
@@ -22,7 +28,6 @@ export const Route = createFileRoute("/_authenticated/board")({
 
 function BoardPage() {
   const { user } = Route.useRouteContext();
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -56,7 +61,6 @@ function BoardPage() {
     mutationFn: async ({ id, stage_id }: { id: string; stage_id: string }) => {
       const { error } = await supabase.from("leads").update({ stage_id, position: Date.now() }).eq("id", id);
       if (error) throw error;
-      // Fire n8n webhook if the destination stage has one configured.
       const lead = (leadsQ.data ?? []).find((l) => l.id === id);
       const stage = (stagesQ.data ?? []).find((s) => s.id === stage_id);
       if (stage?.trigger_webhook && stage.webhook_url && lead) {
@@ -126,13 +130,6 @@ function BoardPage() {
     moveLead.mutate({ id: lead.id, stage_id: overId });
   }
 
-  async function handleSignOut() {
-    await qc.cancelQueries();
-    qc.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
-
   async function handleImport(file: File) {
     setImporting(true);
     try {
@@ -194,103 +191,97 @@ function BoardPage() {
   }
 
   const stages = stagesQ.data ?? [];
+  const leads = leadsQ.data ?? [];
   const nextStagePos = stages.length ? Math.max(...stages.map((s) => s.position)) + 1 : 0;
 
+  const totalLeads = leads.length;
+  const totalStages = stages.length;
+  const encerramentoStage = stages.find((s) => /encerr/i.test(s.name));
+  const encerrados = encerramentoStage ? (leadsByStage.get(encerramentoStage.id)?.length ?? 0) : 0;
+  const conversao = totalLeads > 0 ? Math.round((encerrados / totalLeads) * 100) : 0;
+
+  const toolbar = (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleImport(e.target.files[0])}
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm">
+            <FileDown className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Excel</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            <Upload className="mr-2 h-4 w-4" /> Importar planilha
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" /> Exportar leads
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => downloadTemplate()}>
+            <FileDown className="mr-2 h-4 w-4" /> Baixar modelo
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button variant="outline" size="sm" onClick={() => setStageDialog({ open: true })}>
+        <Plus className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Etapa</span>
+      </Button>
+      <Button size="sm" className="grad-brand text-primary-foreground" onClick={() => setLeadDialog({ open: true })}>
+        <Plus className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Novo lead</span>
+      </Button>
+    </>
+  );
+
   return (
-    <div className="flex h-screen flex-col">
-      <header className="glass flex items-center justify-between gap-4 border-b border-border/60 px-4 py-3 sm:px-6">
-        <Link to="/" className="flex min-w-0 items-center gap-2">
-          <div className="grad-brand grid h-8 w-8 shrink-0 place-items-center rounded-lg">
-            <Kanban className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="truncate font-display text-lg font-bold">Prospecta</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && handleImport(e.target.files[0])}
-          />
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importing}>
-            {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            <span className="hidden sm:inline">Importar</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </Button>
-          <Button size="sm" className="grad-brand text-primary-foreground" onClick={() => setLeadDialog({ open: true })}>
-            <Plus className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Novo lead</span>
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <div className="grid h-8 w-8 place-items-center rounded-full bg-primary/20 text-sm font-semibold text-primary">
-                  {(user.email ?? "?")[0].toUpperCase()}
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">{user.email}</div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setStageDialog({ open: true })}>
-                <Plus className="mr-2 h-4 w-4" /> Nova etapa
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => downloadTemplate()}>
-                <FileDown className="mr-2 h-4 w-4" /> Baixar modelo Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/team" })}>
-                <Users className="mr-2 h-4 w-4" /> Equipe / Atendentes
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/integrations" })}>
-                <Workflow className="mr-2 h-4 w-4" /> Integração n8n / WhatsApp
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" /> Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <AppShell user={user} title="Pipeline de leads" toolbar={toolbar} scrollable={false}>
+      <div className="flex h-full flex-col">
+        <InviteBanner userId={user.id} />
+
+        {/* KPIs */}
+        <div className="grid grid-cols-2 gap-3 border-b border-border/60 bg-surface/30 px-4 py-3 sm:grid-cols-4 sm:px-6">
+          <Kpi label="Leads" value={totalLeads.toString()} icon={<UsersIcon className="h-4 w-4" />} />
+          <Kpi label="Etapas" value={totalStages.toString()} icon={<TrendingUp className="h-4 w-4" />} />
+          <Kpi label="Encerrados" value={encerrados.toString()} accent />
+          <Kpi label="Conversão" value={`${conversao}%`} accent />
         </div>
-      </header>
 
-      <InviteBanner userId={user.id} />
-
-      <main className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6">
-        {stagesQ.isLoading || leadsQ.isLoading ? (
-          <div className="grid h-full place-items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-            <div className="flex h-full gap-4 pb-4">
-              {stages.map((stage) => (
-                <Column
-                  key={stage.id}
-                  stage={stage}
-                  leads={leadsByStage.get(stage.id) ?? []}
-                  onAddLead={() => setLeadDialog({ open: true, stageId: stage.id })}
-                  onEditStage={() => setStageDialog({ open: true, stage })}
-                  onEditLead={(lead) => setLeadDialog({ open: true, lead })}
-                />
-              ))}
-              <button
-                onClick={() => setStageDialog({ open: true })}
-                className="flex h-full w-72 shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground transition hover:border-primary/60 hover:text-foreground"
-              >
-                <Plus className="h-5 w-5" />
-                Nova etapa
-              </button>
+        <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6">
+          {stagesQ.isLoading || leadsQ.isLoading ? (
+            <div className="grid h-full place-items-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <DragOverlay>
-              {activeLead && <LeadCard lead={activeLead} onEdit={() => {}} />}
-            </DragOverlay>
-          </DndContext>
-        )}
-      </main>
+          ) : (
+            <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+              <div className="flex h-full gap-4 pb-4">
+                {stages.map((stage) => (
+                  <Column
+                    key={stage.id}
+                    stage={stage}
+                    leads={leadsByStage.get(stage.id) ?? []}
+                    onAddLead={() => setLeadDialog({ open: true, stageId: stage.id })}
+                    onEditStage={() => setStageDialog({ open: true, stage })}
+                    onEditLead={(lead) => setLeadDialog({ open: true, lead })}
+                  />
+                ))}
+                <button
+                  onClick={() => setStageDialog({ open: true })}
+                  className="flex h-full w-72 shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground transition hover:border-primary/60 hover:text-foreground"
+                >
+                  <Plus className="h-5 w-5" />
+                  Nova etapa
+                </button>
+              </div>
+              <DragOverlay>
+                {activeLead && <LeadCard lead={activeLead} onEdit={() => {}} />}
+              </DragOverlay>
+            </DndContext>
+          )}
+        </div>
+      </div>
 
       {leadDialog.open && workspaceId && (
         <LeadDialog
@@ -315,6 +306,22 @@ function BoardPage() {
           onOpenChange={(o) => setStageDialog({ open: o })}
         />
       )}
+    </AppShell>
+  );
+}
+
+function Kpi({ label, value, icon, accent }: { label: string; value: string; icon?: React.ReactNode; accent?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/60 px-3 py-2">
+      {icon && (
+        <div className={`grid h-8 w-8 place-items-center rounded-md ${accent ? "bg-primary/15 text-primary" : "bg-surface-2 text-muted-foreground"}`}>
+          {icon}
+        </div>
+      )}
+      <div className="min-w-0">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+        <div className={`font-display text-lg font-bold leading-tight ${accent ? "text-primary" : ""}`}>{value}</div>
+      </div>
     </div>
   );
 }
