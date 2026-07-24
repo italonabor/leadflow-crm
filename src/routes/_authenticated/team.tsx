@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, Users, Loader2, Trash2, Copy, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Loader2, Trash2, Copy, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
+import { AppShell, PageContainer } from "@/components/layout/AppShell";
 
 export const Route = createFileRoute("/_authenticated/team")({
   component: TeamPage,
@@ -131,30 +132,14 @@ function TeamPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="glass flex items-center justify-between border-b border-border/60 px-4 py-3 sm:px-6">
-        <Link to="/board" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Voltar ao board
-        </Link>
-        <div className="flex items-center gap-2 font-display font-semibold">
-          <Users className="h-5 w-5 text-primary" /> Equipe
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <AppShell user={user} title="Equipe & atendentes">
+      <PageContainer>
         {!ws ? (
           <div className="grid h-40 place-items-center">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : (
           <div className="space-y-8">
-            <div>
-              <h1 className="font-display text-2xl font-bold">Atendentes do workspace</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Workspace: <b>{ws.name}</b> · seu papel: <b>{ws.role === "admin" ? "Administrador" : "Atendente"}</b>
-              </p>
-            </div>
-
             {isAdmin && (
               <section className="rounded-xl border border-border/60 bg-card p-5 shadow-card">
                 <h2 className="mb-3 font-display text-lg font-semibold">Convidar atendente</h2>
@@ -186,8 +171,8 @@ function TeamPage() {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Após criar, copie o link do convite abaixo e envie ao atendente. Ele precisa criar a conta com o
-                  mesmo e-mail; o convite aparece automaticamente para aceitação.
+                  Após criar, copie o link do convite abaixo. O atendente precisa criar conta com o
+                  mesmo e-mail e o convite aparece automaticamente para aceitação.
                 </p>
               </section>
             )}
@@ -262,7 +247,7 @@ function TeamPage() {
             )}
           </div>
         )}
-      </main>
-    </div>
+      </PageContainer>
+    </AppShell>
   );
 }
