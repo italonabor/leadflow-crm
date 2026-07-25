@@ -1,5 +1,5 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Phone, Link as LinkIcon, AtSign, Briefcase, GripVertical, Pencil, MessageCircle, Copy } from "lucide-react";
+import { Phone, Link as LinkIcon, AtSign, Briefcase, Pencil, MessageCircle, Copy } from "lucide-react";
 import type { Lead, Stage } from "./types";
 import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
