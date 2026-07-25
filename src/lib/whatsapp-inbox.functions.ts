@@ -301,8 +301,18 @@ export const sendAudioInConversation = createServerFn({ method: "POST" })
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
-    const mime = data.mimeType.startsWith("audio/ogg") ? "audio/ogg" : data.mimeType;
-    const ext = mime === "audio/ogg" ? "ogg" : mime.includes("mp4") ? "mp4" : "webm";
+    // A Meta só aceita: aac, mp4, mpeg, amr, ogg (opus). webm é rejeitado.
+    const raw = data.mimeType.split(";")[0].trim();
+    const ALLOWED: Record<string, string> = {
+      "audio/mpeg": "mp3",
+      "audio/mp3": "mp3",
+      "audio/mp4": "mp4",
+      "audio/aac": "aac",
+      "audio/amr": "amr",
+      "audio/ogg": "ogg",
+    };
+    const mime = raw === "audio/mp3" ? "audio/mpeg" : (ALLOWED[raw] ? raw : "audio/mpeg");
+    const ext = ALLOWED[raw] ?? "mp3";
 
     const form = new FormData();
     form.append("messaging_product", "whatsapp");
