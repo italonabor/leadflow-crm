@@ -151,15 +151,18 @@ export function MessageComposer({
         stream.getTracks().forEach((t) => t.stop());
         setRecording(false);
         if (cancelledRef.current) return;
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/ogg" });
-        if (blob.size < 1000) {
+        const raw = new Blob(chunksRef.current, { type: rec.mimeType || "audio/ogg" });
+        if (raw.size < 1000) {
           toast.error("Áudio muito curto");
           return;
         }
         setUploading(true);
         try {
-          const base64 = await blobToBase64(blob);
-          await onSendAudio(base64, (rec.mimeType || "audio/ogg").split(";")[0]);
+          // A Meta não aceita audio/webm — convertemos para MP3 antes de enviar.
+          const { blobToMp3 } = await import("@/lib/audio-mp3");
+          const mp3 = await blobToMp3(raw);
+          const base64 = await blobToBase64(mp3);
+          await onSendAudio(base64, "audio/mpeg");
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "Falha ao enviar áudio");
         } finally {
