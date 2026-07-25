@@ -94,11 +94,12 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{lead ? "Editar lead" : "Novo lead"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
           <div className="grid gap-2">
             <Label>Nome *</Label>
             <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
