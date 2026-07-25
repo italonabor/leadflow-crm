@@ -210,39 +210,7 @@ export const checkWhatsAppConnection = createServerFn({ method: "POST" })
 export const listLeadsForWhatsApp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context as {
-      supabase: {
-        from: (t: string) => {
-          select: (c: string) => {
-            eq: (
-              col: string,
-              val: string,
-            ) => {
-              order: (
-                c: string,
-                o: { ascending: boolean },
-              ) => {
-                limit: (n: number) => Promise<{ data: unknown; error: unknown }>;
-              };
-            };
-            not: (
-              col: string,
-              op: string,
-              val: unknown,
-            ) => {
-              order: (
-                c: string,
-                o: { ascending: boolean },
-              ) => {
-                limit: (n: number) => Promise<{ data: unknown; error: unknown }>;
-              };
-            };
-          };
-        };
-      };
-      userId: string;
-    };
-
+    const { supabase, userId } = context as { supabase: any; userId: string };
     void userId;
 
     const { data, error } = await supabase
