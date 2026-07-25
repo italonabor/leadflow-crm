@@ -40,7 +40,9 @@ import {
   sendTemplateInConversation,
   sendTextInConversation,
   listWhatsAppTemplates,
+  sendAudioInConversation,
 } from "@/lib/whatsapp-inbox.functions";
+import { MessageComposer } from "./MessageComposer";
 
 type Msg = {
   id: string;
@@ -77,6 +79,7 @@ export function ConversationPanel({
   const markRead = useServerFn(markConversationRead);
   const sendText = useServerFn(sendTextInConversation);
   const sendTpl = useServerFn(sendTemplateInConversation);
+  const sendAudio = useServerFn(sendAudioInConversation);
 
   const [text, setText] = useState("");
   const [tplOpen, setTplOpen] = useState(false);
@@ -186,6 +189,28 @@ export function ConversationPanel({
     },
     onSuccess: () => {
       setText("");
+      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ["wa-conversations"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const audioMut = useMutation({
+    mutationFn: async ({ base64, mimeType }: { base64: string; mimeType: string }) => {
+      if (!effectivePhone) throw new Error("Sem número de destino");
+      const r = (await sendAudio({
+        data: {
+          to: effectivePhone,
+          audioBase64: base64,
+          mimeType,
+          conversationId: effectiveConversationId ?? undefined,
+          leadId: leadId ?? undefined,
+        },
+      })) as { ok: boolean; error?: string; conversationId?: string };
+      if (!r.ok) throw new Error(r.error);
+      if (r.conversationId && onConversationCreated) onConversationCreated(r.conversationId);
+    },
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: key });
       qc.invalidateQueries({ queryKey: ["wa-conversations"] });
     },
