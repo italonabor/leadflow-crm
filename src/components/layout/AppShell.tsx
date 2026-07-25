@@ -9,6 +9,7 @@ import {
   Users,
   Workflow,
   MessageCircle,
+  MessageSquare,
   LogOut,
   Menu,
   X,
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 type NavItem = {
-  to: "/board" | "/team" | "/whatsapp" | "/integrations";
+  to: "/board" | "/team" | "/whatsapp" | "/chat" | "/integrations";
   label: string;
   icon: ReactNode;
   adminOnly?: boolean;
@@ -32,6 +33,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { to: "/board", label: "Pipeline", icon: <Kanban className="h-4 w-4" /> },
   { to: "/team", label: "Equipe", icon: <Users className="h-4 w-4" /> },
+  { to: "/chat", label: "Chat", icon: <MessageSquare className="h-4 w-4" /> },
   { to: "/whatsapp", label: "WhatsApp", icon: <MessageCircle className="h-4 w-4" /> },
   { to: "/integrations", label: "Integrações", icon: <Workflow className="h-4 w-4" /> },
 ];
