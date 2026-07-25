@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Trash2, MessageCircle, Send } from "lucide-react";
 import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { sendWhatsAppCloudMessage } from "@/lib/whatsapp-cloud.functions";
+import { ConversationPanel } from "@/components/whatsapp/ConversationPanel";
 import type { Lead, Stage } from "./types";
 
 type Props = {
@@ -94,11 +95,12 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{lead ? "Editar lead" : "Novo lead"}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
           <div className="grid gap-2">
             <Label>Nome *</Label>
             <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
@@ -144,6 +146,13 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
                 { nome: form.nome, profissao: form.profissao || null, telefone: form.telefone || null, rede_social: form.rede_social || null, link: form.link || null },
               )}
             />
+          )}
+          </div>
+          {lead && (
+            <div className="grid gap-2">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversa WhatsApp</div>
+              <ConversationPanel leadId={lead.id} phone={form.telefone} compact />
+            </div>
           )}
         </div>
         <DialogFooter className="gap-2 sm:justify-between">

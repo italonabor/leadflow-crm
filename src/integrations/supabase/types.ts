@@ -145,6 +145,136 @@ export type Database = {
           },
         ]
       }
+      whatsapp_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_inbound_at: string | null
+          last_message_at: string | null
+          last_message_preview: string | null
+          lead_id: string | null
+          phone: string
+          unread_count: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_inbound_at?: string | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          lead_id?: string | null
+          phone: string
+          unread_count?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_inbound_at?: string | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          lead_id?: string | null
+          phone?: string
+          unread_count?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_conversations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          body: string | null
+          conversation_id: string
+          created_at: string
+          direction: string
+          from_phone: string | null
+          id: string
+          lead_id: string | null
+          message_type: string | null
+          raw: Json | null
+          sent_by: string | null
+          status: string | null
+          template_name: string | null
+          to_phone: string | null
+          wa_message_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          body?: string | null
+          conversation_id: string
+          created_at?: string
+          direction: string
+          from_phone?: string | null
+          id?: string
+          lead_id?: string | null
+          message_type?: string | null
+          raw?: Json | null
+          sent_by?: string | null
+          status?: string | null
+          template_name?: string | null
+          to_phone?: string | null
+          wa_message_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          body?: string | null
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          from_phone?: string | null
+          id?: string
+          lead_id?: string | null
+          message_type?: string | null
+          raw?: Json | null
+          sent_by?: string | null
+          status?: string | null
+          template_name?: string | null
+          to_phone?: string | null
+          wa_message_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_invites: {
         Row: {
           accepted_at: string | null
@@ -282,6 +412,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_lead_by_phone: {
+        Args: { _phone: string; _workspace_id: string }
+        Returns: string
+      }
       get_user_email: { Args: { _user_id: string }; Returns: string }
       has_workspace_role: {
         Args: {
@@ -305,6 +439,8 @@ export type Database = {
           user_id: string
         }[]
       }
+      normalize_phone: { Args: { _raw: string }; Returns: string }
+      phone_variants: { Args: { _raw: string }; Returns: string[] }
     }
     Enums: {
       workspace_role: "admin" | "atendente"

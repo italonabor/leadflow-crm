@@ -295,6 +295,8 @@ function WhatsAppPage() {
           {/* Log request/response */}
           {sendLog && <SendLogPanel log={sendLog} />}
 
+          <WebhookPanel />
+
           <section className="rounded-xl border border-border/60 bg-card/60 p-5 text-sm text-muted-foreground">
             <b className="text-foreground">Dica:</b> no modo <i>teste</i> do Meta, o destinatário precisa estar cadastrado como recebedor de teste no painel do app, ter enviado mensagem nas últimas 24h ou receber um <b>template aprovado</b>. Erros comuns: <code>#131030</code> (destinatário fora da lista), <code>#131047</code> (fora da janela de 24h), <code>#133010</code> (número não registrado).
           </section>
@@ -414,5 +416,53 @@ function Field({ label, value }: { label: string; value: string }) {
       <dt className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 break-all font-medium">{value}</dd>
     </div>
+  );
+}
+
+function WebhookPanel() {
+  const url = typeof window !== "undefined"
+    ? `${window.location.origin}/api/public/whatsapp-webhook`
+    : "/api/public/whatsapp-webhook";
+  const copy = (v: string) => {
+    void navigator.clipboard.writeText(v);
+    toast.success("Copiado");
+  };
+  return (
+    <section className="rounded-xl border border-border/60 bg-card p-5 shadow-card">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/15 text-primary">
+          <ShieldCheck className="h-4 w-4" />
+        </div>
+        <div>
+          <h2 className="font-display text-lg font-semibold">Webhook do WhatsApp</h2>
+          <p className="text-xs text-muted-foreground">
+            Configure no painel do app Meta em <b>WhatsApp → Configuração → Webhooks</b> e assine o campo <code>messages</code>.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-2 text-sm">
+        <div>
+          <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Callback URL</div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 truncate rounded-md border border-border/60 bg-surface/50 px-2 py-1 text-xs">{url}</code>
+            <Button size="sm" variant="ghost" className="h-8 gap-1" onClick={() => copy(url)}>
+              <Copy className="h-3 w-3" /> Copiar
+            </Button>
+          </div>
+        </div>
+        <div>
+          <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Verify Token</div>
+          <div className="rounded-md border border-border/60 bg-surface/50 px-2 py-1 text-xs text-muted-foreground">
+            Use o valor salvo em <code>WHATSAPP_VERIFY_TOKEN</code> nas configurações do backend (não é exibido aqui por segurança).
+          </div>
+        </div>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+          <li>Cole a URL acima em "Callback URL" e o valor de <code>WHATSAPP_VERIFY_TOKEN</code> em "Verify Token".</li>
+          <li>Assine o campo <b>messages</b> — mensagens recebidas aparecem em tempo real na aba <b>Inbox WhatsApp</b>.</li>
+          <li>Lógica do 9º dígito (BR) já embutida: leads com/sem o 9 extra são casados automaticamente.</li>
+        </ul>
+      </div>
+    </section>
   );
 }
