@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Trash2, Copy, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Loader2, Trash2, Copy, Mail, MessageCircle, ShieldCheck, User as UserIcon } from "lucide-react";
 import { AppShell, PageContainer } from "@/components/layout/AppShell";
 
 export const Route = createFileRoute("/_authenticated/team")({
@@ -194,8 +194,10 @@ function TeamPage() {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Após criar, copie o link do convite abaixo. O atendente precisa criar conta com o
-                  mesmo e-mail e o convite aparece automaticamente para aceitação.
+                  Ao criar, o link do convite é copiado automaticamente. Você pode enviá-lo por
+                  e-mail ou WhatsApp nos botões da lista de convites pendentes. O vendedor precisa
+                  criar a conta com o mesmo e-mail e o convite aparece automaticamente para
+                  aceitação. (Envio automático de e-mail exige um domínio de e-mail configurado.)
                 </p>
               </section>
             )}
@@ -250,6 +252,16 @@ function TeamPage() {
                       </div>
                       <Button variant="outline" size="sm" onClick={() => copy(inviteLink(i.token))}>
                         <Copy className="mr-2 h-3.5 w-3.5" /> Copiar link
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={mailtoLink(i.email, i.token)}>
+                          <Mail className="mr-2 h-3.5 w-3.5" /> Enviar por e-mail
+                        </a>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={whatsappLink(i.token)} target="_blank" rel="noreferrer">
+                          <MessageCircle className="mr-2 h-3.5 w-3.5" /> WhatsApp
+                        </a>
                       </Button>
                       <Button
                         variant="ghost"
