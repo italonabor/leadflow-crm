@@ -110,6 +110,15 @@ function extractBody(m: NonNullable<
     anyM.image?.caption ??
     anyM.document?.caption ??
     anyM.button?.text ??
+    ({
+      audio: "🎤 Áudio",
+      voice: "🎤 Áudio",
+      image: "🖼️ Imagem",
+      video: "🎬 Vídeo",
+      document: "📎 Documento",
+      sticker: "Sticker",
+      location: "📍 Localização",
+    } as Record<string, string>)[String(anyM.type)] ??
     (anyM.type ? `[${anyM.type}]` : "")
   );
 }
