@@ -244,25 +244,11 @@ async function upsertConversation(
   phone: string,
   leadId: string | null,
 ): Promise<string> {
-  const { data: existing } = await admin
-    .from("whatsapp_conversations")
-    .select("id")
-    .eq("workspace_id", workspaceId)
-    .eq("phone", phone)
-    .maybeSingle();
-
-  if (existing?.id) return existing.id;
-
-  const { data: created, error } = await admin
-    .from("whatsapp_conversations")
-    .insert({
-      workspace_id: workspaceId,
-      phone,
-      lead_id: leadId,
-      last_message_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
-  if (error) throw error;
-  return created.id;
+  const { data, error } = await admin.rpc("upsert_wa_conversation", {
+    _workspace_id: workspaceId,
+    _phone: phone,
+    _lead_id: leadId,
+  });
+  if (error || !data) throw error ?? new Error("falha ao criar conversa");
+  return data as string;
 }
