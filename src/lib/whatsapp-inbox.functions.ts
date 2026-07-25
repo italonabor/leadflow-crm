@@ -419,3 +419,74 @@ export const sendAudioInConversation = createServerFn({ method: "POST" })
 
     return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
   });
+
+/**
+ * Baixa uma mídia recebida (áudio/imagem/vídeo/documento) da Graph API
+ * e devolve como data URL para tocar/visualizar direto no navegador.
+ */
+export const fetchWhatsAppMedia = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ messageId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as { supabase: any };
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    if (!token) return { ok: false as const, error: "WhatsApp não configurado" };
+
+    const { data: msg, error } = await supabase
+      .from("whatsapp_messages")
+      .select("id, raw, message_type")
+      .eq("id", data.messageId)
+      .maybeSingle();
+    if (error) return { ok: false as const, error: String(error.message ?? error) };
+    if (!msg) return { ok: false as const, error: "Mensagem não encontrada" };
+
+    const mediaId = extractMediaId(msg.raw);
+    if (!mediaId) return { ok: false as const, error: "Esta mensagem não possui mídia anexada" };
+
+    const metaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const meta: any = await metaRes.json().catch(() => ({}));
+    if (!metaRes.ok || !meta?.url) {
+      return {
+        ok: false as const,
+        error: meta?.error?.message ?? `Falha ao localizar mídia (HTTP ${metaRes.status})`,
+      };
+    }
+
+    const fileRes = await fetch(meta.url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!fileRes.ok) {
+      return { ok: false as const, error: `Falha ao baixar mídia (HTTP ${fileRes.status})` };
+    }
+    const buf = new Uint8Array(await fileRes.arrayBuffer());
+    const mimeType: string = meta.mime_type ?? "application/octet-stream";
+    return {
+      ok: true as const,
+      mimeType,
+      dataUrl: `data:${mimeType};base64,${toBase64(buf)}`,
+      filename: meta?.file_name ?? null,
+    };
+  });
+
+function extractMediaId(raw: unknown): string | null {
+  const r = raw as any;
+  if (!r || typeof r !== "object") return null;
+  return (
+    r.audio?.id ??
+    r.voice?.id ??
+    r.image?.id ??
+    r.video?.id ??
+    r.document?.id ??
+    r.sticker?.id ??
+    null
+  );
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let out = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    out += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(out);
+}
