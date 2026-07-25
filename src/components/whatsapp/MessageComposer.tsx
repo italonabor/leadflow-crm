@@ -158,11 +158,30 @@ export function MessageComposer({
         }
         setUploading(true);
         try {
-          // A Meta não aceita audio/webm — convertemos para MP3 antes de enviar.
-          const { blobToMp3 } = await import("@/lib/audio-mp3");
-          const mp3 = await blobToMp3(raw);
-          const base64 = await blobToBase64(mp3);
-          await onSendAudio(base64, "audio/mpeg");
+          // Nota de voz nativa do WhatsApp = OGG/Opus. Se o navegador já gravou em ogg,
+          // envia direto; se gravou em webm/opus, remuxamos para ogg sem recodificar.
+          // Só cai para MP3 se o áudio não for Opus (ex.: Safari em mp4).
+          let out: Blob = raw;
+          let mime = "audio/ogg";
+          const recorded = (rec.mimeType || raw.type || "").toLowerCase();
+          if (recorded.includes("ogg")) {
+            out = new Blob([raw], { type: "audio/ogg" });
+          } else if (recorded.includes("webm")) {
+            const { webmOpusToOgg } = await import("@/lib/audio-ogg");
+            try {
+              out = await webmOpusToOgg(raw);
+            } catch {
+              const { blobToMp3 } = await import("@/lib/audio-mp3");
+              out = await blobToMp3(raw);
+              mime = "audio/mpeg";
+            }
+          } else {
+            const { blobToMp3 } = await import("@/lib/audio-mp3");
+            out = await blobToMp3(raw);
+            mime = "audio/mpeg";
+          }
+          const base64 = await blobToBase64(out);
+          await onSendAudio(base64, mime);
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "Falha ao enviar áudio");
         } finally {
