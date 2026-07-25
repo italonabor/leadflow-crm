@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Send,
   Loader2,
   Clock,
   ShieldAlert,
