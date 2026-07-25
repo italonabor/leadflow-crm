@@ -146,6 +146,13 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
               )}
             />
           )}
+          </div>
+          {lead && (
+            <div className="grid gap-2">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversa WhatsApp</div>
+              <ConversationPanel leadId={lead.id} phone={form.telefone} compact />
+            </div>
+          )}
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
           {lead ? (
