@@ -154,6 +154,7 @@ export type Database = {
           last_message_preview: string | null
           lead_id: string | null
           phone: string
+          phone_key: string
           unread_count: number
           updated_at: string
           workspace_id: string
@@ -166,6 +167,7 @@ export type Database = {
           last_message_preview?: string | null
           lead_id?: string | null
           phone: string
+          phone_key: string
           unread_count?: number
           updated_at?: string
           workspace_id: string
@@ -178,6 +180,7 @@ export type Database = {
           last_message_preview?: string | null
           lead_id?: string | null
           phone?: string
+          phone_key?: string
           unread_count?: number
           updated_at?: string
           workspace_id?: string
@@ -441,6 +444,11 @@ export type Database = {
       }
       normalize_phone: { Args: { _raw: string }; Returns: string }
       phone_variants: { Args: { _raw: string }; Returns: string[] }
+      upsert_wa_conversation: {
+        Args: { _lead_id: string; _phone: string; _workspace_id: string }
+        Returns: string
+      }
+      wa_phone_key: { Args: { _phone: string }; Returns: string }
     }
     Enums: {
       workspace_role: "admin" | "atendente"

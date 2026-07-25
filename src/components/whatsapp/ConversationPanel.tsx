@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Send,
   Loader2,
   Clock,
   ShieldAlert,
@@ -40,7 +38,9 @@ import {
   sendTemplateInConversation,
   sendTextInConversation,
   listWhatsAppTemplates,
+  sendAudioInConversation,
 } from "@/lib/whatsapp-inbox.functions";
+import { MessageComposer } from "./MessageComposer";
 
 type Msg = {
   id: string;
@@ -77,6 +77,7 @@ export function ConversationPanel({
   const markRead = useServerFn(markConversationRead);
   const sendText = useServerFn(sendTextInConversation);
   const sendTpl = useServerFn(sendTemplateInConversation);
+  const sendAudio = useServerFn(sendAudioInConversation);
 
   const [text, setText] = useState("");
   const [tplOpen, setTplOpen] = useState(false);
@@ -92,7 +93,11 @@ export function ConversationPanel({
     queryFn: async () => {
       if (conversationId) {
         const r = (await listMsgs({ data: { conversationId } })) as
-          | { ok: true; conversation: { id: string; phone: string; last_inbound_at: string | null } | null; messages: Msg[] }
+          | {
+              ok: true;
+              conversation: { id: string; phone: string; last_inbound_at: string | null } | null;
+              messages: Msg[];
+            }
           | { ok: false; error: string };
         if (!r.ok) throw new Error(r.error);
         return {
@@ -156,7 +161,8 @@ export function ConversationPanel({
 
   // marcar como lido ao abrir
   useEffect(() => {
-    if (effectiveConversationId) void markRead({ data: { conversationId: effectiveConversationId } });
+    if (effectiveConversationId)
+      void markRead({ data: { conversationId: effectiveConversationId } });
   }, [effectiveConversationId, markRead]);
 
   useEffect(() => {
@@ -192,13 +198,41 @@ export function ConversationPanel({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const audioMut = useMutation({
+    mutationFn: async ({ base64, mimeType }: { base64: string; mimeType: string }) => {
+      if (!effectivePhone) throw new Error("Sem número de destino");
+      const r = (await sendAudio({
+        data: {
+          to: effectivePhone,
+          audioBase64: base64,
+          mimeType,
+          conversationId: effectiveConversationId ?? undefined,
+          leadId: leadId ?? undefined,
+        },
+      })) as { ok: boolean; error?: string; conversationId?: string };
+      if (!r.ok) throw new Error(r.error);
+      if (r.conversationId && onConversationCreated) onConversationCreated(r.conversationId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: ["wa-conversations"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
-    <div className={`flex ${compact ? "h-[420px]" : "h-full"} flex-col rounded-lg border border-border/60 bg-card`}>
+    <div
+      className={`flex ${compact ? "h-[420px]" : "h-full"} flex-col rounded-lg border border-border/60 bg-card`}
+    >
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
         <div className="flex items-center gap-2 text-sm">
           <span className="font-mono text-muted-foreground">{effectivePhone ?? "—"}</span>
         </div>
-        <Window24hBadge open={window24h.open} remainingMs={window24h.remainingMs} hasInbound={!!lastInboundAt} />
+        <Window24hBadge
+          open={window24h.open}
+          remainingMs={window24h.remainingMs}
+          hasInbound={!!lastInboundAt}
+        />
       </div>
 
       <ScrollArea className="flex-1 px-3 py-3">
@@ -221,57 +255,47 @@ export function ConversationPanel({
       </ScrollArea>
 
       <div className="border-t border-border/60 p-2">
-        {window24h.open ? (
-          <div className="flex items-end gap-2">
-            <Textarea
-              rows={2}
-              placeholder="Digite sua mensagem…"
+        <Dialog open={tplOpen} onOpenChange={setTplOpen}>
+          {window24h.open ? (
+            <MessageComposer
               value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  if (text.trim()) sendMut.mutate();
-                }
+              onChange={setText}
+              sending={sendMut.isPending}
+              disabled={!effectivePhone}
+              onSend={() => sendMut.mutate()}
+              onSendAudio={async (base64, mimeType) => {
+                await audioMut.mutateAsync({ base64, mimeType });
               }}
-              className="min-h-[44px] resize-none"
+              onOpenTemplates={() => setTplOpen(true)}
             />
-            <Button
-              className="grad-brand text-primary-foreground"
-              disabled={!text.trim() || sendMut.isPending || !effectivePhone}
-              onClick={() => sendMut.mutate()}
-            >
-              {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-            <div className="flex items-center gap-2 text-amber-400">
-              <ShieldAlert className="h-4 w-4" />
-              <b>Janela de 24h fechada.</b>
-            </div>
-            <p className="text-muted-foreground">
-              Fora da janela, o WhatsApp só aceita <b>mensagens de modelo (template)</b> aprovadas pela Meta.
-            </p>
-            <Dialog open={tplOpen} onOpenChange={setTplOpen}>
+          ) : (
+            <div className="grid gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+              <div className="flex items-center gap-2 text-amber-400">
+                <ShieldAlert className="h-4 w-4" />
+                <b>Janela de 24h fechada.</b>
+              </div>
+              <p className="text-muted-foreground">
+                Fora da janela, o WhatsApp só aceita <b>mensagens de modelo (template)</b> aprovadas
+                pela Meta.
+              </p>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" disabled={!effectivePhone}>
                   <FileText className="mr-2 h-4 w-4" /> Enviar mensagem de modelo
                 </Button>
               </DialogTrigger>
-              <TemplateDialog
-                to={effectivePhone ?? ""}
-                conversationId={effectiveConversationId ?? undefined}
-                leadId={leadId ?? undefined}
-                onSent={() => {
-                  setTplOpen(false);
-                  qc.invalidateQueries({ queryKey: key });
-                  qc.invalidateQueries({ queryKey: ["wa-conversations"] });
-                }}
-              />
-            </Dialog>
-          </div>
-        )}
+            </div>
+          )}
+          <TemplateDialog
+            to={effectivePhone ?? ""}
+            conversationId={effectiveConversationId ?? undefined}
+            leadId={leadId ?? undefined}
+            onSent={() => {
+              setTplOpen(false);
+              qc.invalidateQueries({ queryKey: key });
+              qc.invalidateQueries({ queryKey: ["wa-conversations"] });
+            }}
+          />
+        </Dialog>
       </div>
     </div>
   );
@@ -297,7 +321,10 @@ function Window24hBadge({
     const h = Math.floor(remainingMs / 3600_000);
     const m = Math.floor((remainingMs % 3600_000) / 60_000);
     return (
-      <Badge className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-400" variant="outline">
+      <Badge
+        className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+        variant="outline"
+      >
         <ShieldCheck className="h-3 w-3" /> Janela 24h · {h}h{m}m
       </Badge>
     );
@@ -334,7 +361,12 @@ function MessageBubble({ m }: { m: Msg }) {
         <div className="whitespace-pre-wrap break-words">{m.body ?? "—"}</div>
         <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-70">
           {time}
-          {isOut && (m.status === "read" ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />)}
+          {isOut &&
+            (m.status === "read" ? (
+              <CheckCheck className="h-3 w-3" />
+            ) : (
+              <Check className="h-3 w-3" />
+            ))}
         </div>
       </div>
     </li>
@@ -404,7 +436,8 @@ function TemplateDialog({
       </DialogHeader>
       <div className="grid gap-3">
         <p className="text-xs text-muted-foreground">
-          Templates devem estar <b>aprovados</b> na Meta. Fora da janela de 24h só é possível iniciar conversa com template.
+          Templates devem estar <b>aprovados</b> na Meta. Fora da janela de 24h só é possível
+          iniciar conversa com template.
         </p>
 
         {q.isLoading ? (
@@ -433,7 +466,11 @@ function TemplateDialog({
                 : "Nenhum template aprovado encontrado. Digite o nome manualmente."}
             </div>
             <label className="text-sm font-medium">Nome do template</label>
-            <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="hello_world" />
+            <Input
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+              placeholder="hello_world"
+            />
           </div>
         )}
 
@@ -464,7 +501,11 @@ function TemplateDialog({
         )}
       </div>
       <DialogFooter>
-        <Button className="grad-brand text-primary-foreground" onClick={() => mut.mutate()} disabled={mut.isPending}>
+        <Button
+          className="grad-brand text-primary-foreground"
+          onClick={() => mut.mutate()}
+          disabled={mut.isPending}
+        >
           {mut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Enviar template
         </Button>

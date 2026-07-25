@@ -134,17 +134,12 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
         });
         leadId = found ?? null;
       }
-      const { data: existing } = await supabase
-        .from("whatsapp_conversations").select("id")
-        .eq("workspace_id", workspaceId).eq("phone", to).maybeSingle();
-      if (existing?.id) conversationId = existing.id;
-      else {
-        const { data: created } = await supabase.from("whatsapp_conversations").insert({
-          workspace_id: workspaceId, phone: to, lead_id: leadId,
-          last_message_at: new Date().toISOString(),
-        }).select("id").single();
-        conversationId = created?.id;
-      }
+      const { data: cid } = await supabase.rpc("upsert_wa_conversation", {
+        _workspace_id: workspaceId,
+        _phone: to,
+        _lead_id: leadId,
+      });
+      conversationId = cid ?? undefined;
     }
 
     if (conversationId && workspaceId) {
@@ -229,17 +224,12 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
           });
           leadId = found ?? null;
         }
-        const { data: existing } = await supabase
-          .from("whatsapp_conversations").select("id")
-          .eq("workspace_id", workspaceId).eq("phone", to).maybeSingle();
-        conversationId = existing?.id;
-        if (!conversationId) {
-          const { data: created } = await supabase.from("whatsapp_conversations").insert({
-            workspace_id: workspaceId, phone: to, lead_id: leadId,
-            last_message_at: new Date().toISOString(),
-          }).select("id").single();
-          conversationId = created?.id;
-        }
+        const { data: cid } = await supabase.rpc("upsert_wa_conversation", {
+          _workspace_id: workspaceId,
+          _phone: to,
+          _lead_id: leadId,
+        });
+        conversationId = cid ?? undefined;
       }
       if (conversationId) {
         await supabase.from("whatsapp_messages").insert({
@@ -283,4 +273,98 @@ export const listWhatsAppTemplates = createServerFn({ method: "POST" })
     if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
     const templates = (json.data ?? []).filter((t: any) => t.status === "APPROVED");
     return { ok: true as const, templates };
+  });
+
+/** Envia ÁUDIO (nota de voz) na conversa: faz upload na Graph API e envia. */
+export const sendAudioInConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      to: z.string().min(6),
+      audioBase64: z.string().min(10),
+      mimeType: z.string().default("audio/ogg"),
+      conversationId: z.string().uuid().optional(),
+      leadId: z.string().uuid().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: any; userId: string };
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    if (!token || !phoneId) return { ok: false as const, error: "WhatsApp não configurado" };
+
+    const to = normalizePhone(data.to);
+
+    // base64 -> bytes
+    const b64 = data.audioBase64.includes(",") ? data.audioBase64.split(",")[1] : data.audioBase64;
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    const mime = data.mimeType.startsWith("audio/ogg") ? "audio/ogg" : data.mimeType;
+    const ext = mime === "audio/ogg" ? "ogg" : mime.includes("mp4") ? "mp4" : "webm";
+
+    const form = new FormData();
+    form.append("messaging_product", "whatsapp");
+    form.append("type", mime);
+    form.append("file", new Blob([bytes], { type: mime }), `audio.${ext}`);
+
+    const up = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const upJson: any = await up.json().catch(() => ({}));
+    if (!up.ok || !upJson?.id) {
+      return { ok: false as const, error: upJson?.error?.message ?? `Falha no upload do áudio (HTTP ${up.status})` };
+    }
+
+    const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messaging_product: "whatsapp", to, type: "audio", audio: { id: upJson.id } }),
+    });
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
+
+    const { data: ws } = await supabase
+      .from("workspace_members").select("workspace_id").eq("user_id", userId).limit(1).maybeSingle();
+    const workspaceId = ws?.workspace_id;
+    let conversationId = data.conversationId;
+    let leadId = data.leadId ?? null;
+
+    if (workspaceId && !conversationId) {
+      if (!leadId) {
+        const { data: found } = await supabase.rpc("find_lead_by_phone", {
+          _workspace_id: workspaceId, _phone: to,
+        });
+        leadId = found ?? null;
+      }
+      const { data: cid } = await supabase.rpc("upsert_wa_conversation", {
+        _workspace_id: workspaceId, _phone: to, _lead_id: leadId,
+      });
+      conversationId = cid ?? undefined;
+    }
+
+    if (workspaceId && conversationId) {
+      await supabase.from("whatsapp_messages").insert({
+        workspace_id: workspaceId,
+        conversation_id: conversationId,
+        lead_id: leadId,
+        direction: "outbound",
+        wa_message_id: json?.messages?.[0]?.id ?? null,
+        to_phone: to,
+        body: "[áudio]",
+        message_type: "audio",
+        status: "sent",
+        sent_by: userId,
+        raw: json,
+      });
+      await supabase.from("whatsapp_conversations").update({
+        last_message_at: new Date().toISOString(),
+        last_message_preview: "[áudio]",
+      }).eq("id", conversationId);
+    }
+
+    return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
   });
