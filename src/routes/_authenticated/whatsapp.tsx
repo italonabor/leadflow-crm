@@ -109,7 +109,7 @@ function WhatsAppPage() {
         request: null,
         response: null,
         durationMs: 0,
-      } as SendResult);
+      } as unknown as SendResult);
       toast.error(e.message);
     },
   });
