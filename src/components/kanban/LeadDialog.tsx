@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Trash2, MessageCircle, Send } from "lucide-react";
 import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { sendWhatsAppCloudMessage } from "@/lib/whatsapp-cloud.functions";
+import { ConversationPanel } from "@/components/whatsapp/ConversationPanel";
 import type { Lead, Stage } from "./types";
 
 type Props = {
