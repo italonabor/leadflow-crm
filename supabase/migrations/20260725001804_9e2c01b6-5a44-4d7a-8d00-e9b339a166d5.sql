@@ -1,0 +1,1 @@
+DELETE FROM public.workspace_messages WHERE content = 'Mensagem de teste do chat interno';
