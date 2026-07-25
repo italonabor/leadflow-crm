@@ -30,6 +30,8 @@ import {
   FileText,
   CheckCheck,
   Check,
+  Download,
+  Play,
 } from "lucide-react";
 import {
   listConversationMessages,
@@ -39,6 +41,7 @@ import {
   sendTextInConversation,
   listWhatsAppTemplates,
   sendAudioInConversation,
+  fetchWhatsAppMedia,
 } from "@/lib/whatsapp-inbox.functions";
 import { MessageComposer } from "./MessageComposer";
 
