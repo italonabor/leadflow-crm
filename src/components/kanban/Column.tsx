@@ -123,7 +123,7 @@ export function Column({
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col">
+    <div className="flex h-full w-60 shrink-0 flex-col">
       <div className="mb-2 flex items-center justify-between px-1">
         <button onClick={onEditStage} className="group flex min-w-0 items-center gap-2 text-left">
           <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
