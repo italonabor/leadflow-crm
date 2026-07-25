@@ -440,7 +440,15 @@ export const fetchWhatsAppMedia = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, error: String(error.message ?? error) };
     if (!msg) return { ok: false as const, error: "Mensagem não encontrada" };
 
-    const mediaId = extractMediaId(msg.raw);
+    const r = (msg.raw ?? {}) as any;
+    const mediaId: string | null =
+      r.audio?.id ??
+      r.voice?.id ??
+      r.image?.id ??
+      r.video?.id ??
+      r.document?.id ??
+      r.sticker?.id ??
+      null;
     if (!mediaId) return { ok: false as const, error: "Esta mensagem não possui mídia anexada" };
 
     const metaRes = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
@@ -460,33 +468,16 @@ export const fetchWhatsAppMedia = createServerFn({ method: "POST" })
     }
     const buf = new Uint8Array(await fileRes.arrayBuffer());
     const mimeType: string = meta.mime_type ?? "application/octet-stream";
+    let base64 = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < buf.length; i += chunk) {
+      base64 += String.fromCharCode(...buf.subarray(i, i + chunk));
+    }
+    base64 = btoa(base64);
     return {
       ok: true as const,
       mimeType,
-      dataUrl: `data:${mimeType};base64,${toBase64(buf)}`,
+      dataUrl: `data:${mimeType};base64,${base64}`,
       filename: meta?.file_name ?? null,
     };
   });
-
-function extractMediaId(raw: unknown): string | null {
-  const r = raw as any;
-  if (!r || typeof r !== "object") return null;
-  return (
-    r.audio?.id ??
-    r.voice?.id ??
-    r.image?.id ??
-    r.video?.id ??
-    r.document?.id ??
-    r.sticker?.id ??
-    null
-  );
-}
-
-function toBase64(bytes: Uint8Array): string {
-  let out = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    out += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(out);
-}
