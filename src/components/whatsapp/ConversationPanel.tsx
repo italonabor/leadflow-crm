@@ -92,10 +92,15 @@ export function ConversationPanel({
     queryFn: async () => {
       if (conversationId) {
         const r = (await listMsgs({ data: { conversationId } })) as
-          | { ok: true; messages: Msg[] }
+          | { ok: true; conversation: { id: string; phone: string; last_inbound_at: string | null } | null; messages: Msg[] }
           | { ok: false; error: string };
         if (!r.ok) throw new Error(r.error);
-        return { conversationId, phone: phone ?? null, lastInboundAt: null as string | null, messages: r.messages };
+        return {
+          conversationId,
+          phone: r.conversation?.phone ?? phone ?? null,
+          lastInboundAt: r.conversation?.last_inbound_at ?? null,
+          messages: r.messages,
+        };
       }
       const r = (await listLead({ data: { leadId: leadId! } })) as
         | {
