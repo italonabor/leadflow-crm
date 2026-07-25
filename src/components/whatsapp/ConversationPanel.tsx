@@ -121,7 +121,16 @@ export function ConversationPanel({
 
   const effectiveConversationId = conversationId ?? query.data?.conversationId ?? null;
   const effectivePhone = phone ?? query.data?.phone ?? null;
-  const lastInboundAt = query.data?.lastInboundAt ?? null;
+  // fallback: se a conversa não tem last_inbound_at gravado, deriva da última mensagem recebida
+  const lastInboundAt = useMemo(() => {
+    const fromConv = query.data?.lastInboundAt ?? null;
+    const msgs = query.data?.messages ?? [];
+    const lastInboundMsg = [...msgs].reverse().find((m) => m.direction === "inbound");
+    const fromMsg = lastInboundMsg?.created_at ?? null;
+    if (!fromConv) return fromMsg;
+    if (!fromMsg) return fromConv;
+    return new Date(fromMsg) > new Date(fromConv) ? fromMsg : fromConv;
+  }, [query.data]);
 
   // Realtime subscribe
   useEffect(() => {
