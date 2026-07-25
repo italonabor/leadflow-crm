@@ -419,10 +419,28 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function resolveStableWebhookUrl(): { url: string; note: string | null } {
+  if (typeof window === "undefined") {
+    return { url: "/api/public/whatsapp-webhook", note: null };
+  }
+  const host = window.location.hostname;
+  const idPreview = host.match(/^id-preview--([a-f0-9-]+)\.lovable\.app$/i);
+  if (idPreview) {
+    const pid = idPreview[1];
+    return {
+      url: `https://project--${pid}-dev.lovable.app/api/public/whatsapp-webhook`,
+      note:
+        "URL estável do preview (não muda). A URL do editor (id-preview…) redireciona e a Meta rejeita — use SEMPRE esta. Após publicar, troque `-dev` por vazio para apontar para produção.",
+    };
+  }
+  if (/^project--[a-f0-9-]+(-dev)?\.lovable\.app$/i.test(host)) {
+    return { url: `${window.location.origin}/api/public/whatsapp-webhook`, note: null };
+  }
+  return { url: `${window.location.origin}/api/public/whatsapp-webhook`, note: null };
+}
+
 function WebhookPanel() {
-  const url = typeof window !== "undefined"
-    ? `${window.location.origin}/api/public/whatsapp-webhook`
-    : "/api/public/whatsapp-webhook";
+  const { url, note } = resolveStableWebhookUrl();
   const copy = (v: string) => {
     void navigator.clipboard.writeText(v);
     toast.success("Copiado");
@@ -450,6 +468,7 @@ function WebhookPanel() {
               <Copy className="h-3 w-3" /> Copiar
             </Button>
           </div>
+          {note && <p className="mt-1 text-[11px] text-amber-400">{note}</p>}
         </div>
         <div>
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Verify Token</div>
@@ -459,7 +478,8 @@ function WebhookPanel() {
         </div>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
           <li>Cole a URL acima em "Callback URL" e o valor de <code>WHATSAPP_VERIFY_TOKEN</code> em "Verify Token".</li>
-          <li>Assine o campo <b>messages</b> — mensagens recebidas aparecem em tempo real na aba <b>Inbox WhatsApp</b>.</li>
+          <li>Assine o campo <b>messages</b> (e opcionalmente <b>message_status</b>).</li>
+          <li>Depois envie uma mensagem do seu celular para o número do WhatsApp Business para testar — deve aparecer no <b>Inbox WhatsApp</b>.</li>
           <li>Lógica do 9º dígito (BR) já embutida: leads com/sem o 9 extra são casados automaticamente.</li>
         </ul>
       </div>
