@@ -132,7 +132,7 @@ function TeamPage() {
   }
 
   return (
-    <AppShell user={user} title="Equipe & atendentes">
+    <AppShell user={user} title="Equipe & vendedores">
       <PageContainer>
         {!ws ? (
           <div className="grid h-40 place-items-center">
@@ -142,13 +142,13 @@ function TeamPage() {
           <div className="space-y-8">
             {isAdmin && (
               <section className="rounded-xl border border-border/60 bg-card p-5 shadow-card">
-                <h2 className="mb-3 font-display text-lg font-semibold">Convidar atendente</h2>
+                <h2 className="mb-3 font-display text-lg font-semibold">Convidar vendedor</h2>
                 <div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
                   <div className="grid gap-1">
                     <Label>E-mail</Label>
                     <Input
                       type="email"
-                      placeholder="atendente@empresa.com"
+                      placeholder="vendedor@empresa.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -158,7 +158,7 @@ function TeamPage() {
                     <Select value={role} onValueChange={(v) => setRole(v as "admin" | "atendente")}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="atendente">Atendente</SelectItem>
+                        <SelectItem value="atendente">Vendedor</SelectItem>
                         <SelectItem value="admin">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
@@ -191,7 +191,7 @@ function TeamPage() {
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-2 py-0.5 text-xs">
                       {m.role === "admin" ? <ShieldCheck className="h-3 w-3 text-primary" /> : <UserIcon className="h-3 w-3" />}
-                      {m.role === "admin" ? "Admin" : "Atendente"}
+                      {m.role === "admin" ? "Admin" : "Vendedor"}
                     </span>
                     {isAdmin && m.user_id !== user.id && m.user_id !== ws.owner_id && (
                       <Button
@@ -221,7 +221,7 @@ function TeamPage() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{i.email}</div>
                         <div className="text-xs text-muted-foreground">
-                          {i.role === "admin" ? "Administrador" : "Atendente"} · expira{" "}
+                          {i.role === "admin" ? "Administrador" : "Vendedor"} · expira{" "}
                           {new Date(i.expires_at).toLocaleDateString("pt-BR")}
                         </div>
                       </div>
