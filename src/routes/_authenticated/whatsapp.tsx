@@ -295,6 +295,8 @@ function WhatsAppPage() {
           {/* Log request/response */}
           {sendLog && <SendLogPanel log={sendLog} />}
 
+          <WebhookPanel />
+
           <section className="rounded-xl border border-border/60 bg-card/60 p-5 text-sm text-muted-foreground">
             <b className="text-foreground">Dica:</b> no modo <i>teste</i> do Meta, o destinatário precisa estar cadastrado como recebedor de teste no painel do app, ter enviado mensagem nas últimas 24h ou receber um <b>template aprovado</b>. Erros comuns: <code>#131030</code> (destinatário fora da lista), <code>#131047</code> (fora da janela de 24h), <code>#133010</code> (número não registrado).
           </section>
