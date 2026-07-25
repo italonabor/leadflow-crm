@@ -1,0 +1,281 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+function normalizePhone(raw: string): string {
+  const d = raw.replace(/\D/g, "");
+  if (!d) return "";
+  if (d.length >= 12 && d.startsWith("55")) return d;
+  if (d.length <= 11) return "55" + d;
+  return d;
+}
+
+/** Lista conversas do workspace ativo (mais recentes primeiro). */
+export const listConversations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context as { supabase: any };
+    const { data, error } = await supabase
+      .from("whatsapp_conversations")
+      .select("id, phone, lead_id, last_inbound_at, last_message_at, last_message_preview, unread_count, leads(nome, telefone)")
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(200);
+    if (error) return { ok: false as const, error: String(error.message ?? error) };
+    return { ok: true as const, conversations: data ?? [] };
+  });
+
+/** Mensagens de uma conversa. */
+export const listConversationMessages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ conversationId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as { supabase: any };
+    const { data: msgs, error } = await supabase
+      .from("whatsapp_messages")
+      .select("id, direction, body, wa_message_id, message_type, template_name, status, created_at, sent_by")
+      .eq("conversation_id", data.conversationId)
+      .order("created_at", { ascending: true });
+    if (error) return { ok: false as const, error: String(error.message ?? error) };
+    return { ok: true as const, messages: msgs ?? [] };
+  });
+
+/** Mensagens vinculadas a um lead (para o painel de chat dentro do card do lead). */
+export const listLeadConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ leadId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as { supabase: any };
+    // busca a conversa pelo lead_id
+    const { data: conv } = await supabase
+      .from("whatsapp_conversations")
+      .select("id, phone, last_inbound_at")
+      .eq("lead_id", data.leadId)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!conv) return { ok: true as const, conversation: null, messages: [] };
+
+    const { data: msgs } = await supabase
+      .from("whatsapp_messages")
+      .select("id, direction, body, message_type, template_name, status, created_at")
+      .eq("conversation_id", conv.id)
+      .order("created_at", { ascending: true });
+
+    return { ok: true as const, conversation: conv, messages: msgs ?? [] };
+  });
+
+/** Marca conversa como lida. */
+export const markConversationRead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ conversationId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as { supabase: any };
+    await supabase
+      .from("whatsapp_conversations")
+      .update({ unread_count: 0 })
+      .eq("id", data.conversationId);
+    return { ok: true as const };
+  });
+
+/** Envia mensagem de TEXTO (dentro da janela de 24h) e persiste no histórico. */
+export const sendTextInConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      conversationId: z.string().uuid().optional(),
+      leadId: z.string().uuid().optional(),
+      to: z.string().min(6),
+      body: z.string().min(1),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: any; userId: string };
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    if (!token || !phoneId) return { ok: false as const, error: "WhatsApp não configurado" };
+
+    const to = normalizePhone(data.to);
+    const res = await fetch(
+      `https://graph.facebook.com/v20.0/${phoneId}/messages`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to,
+          type: "text",
+          text: { preview_url: true, body: data.body },
+        }),
+      },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
+    }
+
+    // upsert conversa
+    let conversationId = data.conversationId;
+    let leadId = data.leadId ?? null;
+    // Descobre workspace do usuário
+    const { data: ws } = await supabase
+      .from("workspace_members").select("workspace_id").eq("user_id", userId).limit(1).maybeSingle();
+    const workspaceId = ws?.workspace_id;
+
+    if (!conversationId && workspaceId) {
+      if (!leadId) {
+        const { data: found } = await supabase.rpc("find_lead_by_phone", {
+          _workspace_id: workspaceId, _phone: to,
+        });
+        leadId = found ?? null;
+      }
+      const { data: existing } = await supabase
+        .from("whatsapp_conversations").select("id")
+        .eq("workspace_id", workspaceId).eq("phone", to).maybeSingle();
+      if (existing?.id) conversationId = existing.id;
+      else {
+        const { data: created } = await supabase.from("whatsapp_conversations").insert({
+          workspace_id: workspaceId, phone: to, lead_id: leadId,
+          last_message_at: new Date().toISOString(),
+        }).select("id").single();
+        conversationId = created?.id;
+      }
+    }
+
+    if (conversationId && workspaceId) {
+      await supabase.from("whatsapp_messages").insert({
+        workspace_id: workspaceId,
+        conversation_id: conversationId,
+        lead_id: leadId,
+        direction: "outbound",
+        wa_message_id: json?.messages?.[0]?.id ?? null,
+        to_phone: to,
+        body: data.body,
+        message_type: "text",
+        status: "sent",
+        sent_by: userId,
+        raw: json,
+      });
+      await supabase.from("whatsapp_conversations").update({
+        last_message_at: new Date().toISOString(),
+        last_message_preview: data.body.slice(0, 200),
+      }).eq("id", conversationId);
+    }
+
+    return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
+  });
+
+/** Envia mensagem TEMPLATE (fora da janela de 24h). */
+export const sendTemplateInConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      to: z.string().min(6),
+      templateName: z.string().min(1),
+      language: z.string().default("pt_BR"),
+      bodyParams: z.array(z.string()).default([]),
+      conversationId: z.string().uuid().optional(),
+      leadId: z.string().uuid().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: any; userId: string };
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    if (!token || !phoneId) return { ok: false as const, error: "WhatsApp não configurado" };
+
+    const to = normalizePhone(data.to);
+    const components = data.bodyParams.length
+      ? [{ type: "body", parameters: data.bodyParams.map((t) => ({ type: "text", text: t })) }]
+      : undefined;
+
+    const res = await fetch(
+      `https://graph.facebook.com/v20.0/${phoneId}/messages`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to,
+          type: "template",
+          template: {
+            name: data.templateName,
+            language: { code: data.language },
+            ...(components ? { components } : {}),
+          },
+        }),
+      },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
+
+    // Persistir como outbound (mesma lógica de upsert)
+    const { data: ws } = await supabase
+      .from("workspace_members").select("workspace_id").eq("user_id", userId).limit(1).maybeSingle();
+    const workspaceId = ws?.workspace_id;
+    let conversationId = data.conversationId;
+    let leadId = data.leadId ?? null;
+
+    if (workspaceId) {
+      if (!conversationId) {
+        if (!leadId) {
+          const { data: found } = await supabase.rpc("find_lead_by_phone", {
+            _workspace_id: workspaceId, _phone: to,
+          });
+          leadId = found ?? null;
+        }
+        const { data: existing } = await supabase
+          .from("whatsapp_conversations").select("id")
+          .eq("workspace_id", workspaceId).eq("phone", to).maybeSingle();
+        conversationId = existing?.id;
+        if (!conversationId) {
+          const { data: created } = await supabase.from("whatsapp_conversations").insert({
+            workspace_id: workspaceId, phone: to, lead_id: leadId,
+            last_message_at: new Date().toISOString(),
+          }).select("id").single();
+          conversationId = created?.id;
+        }
+      }
+      if (conversationId) {
+        await supabase.from("whatsapp_messages").insert({
+          workspace_id: workspaceId,
+          conversation_id: conversationId,
+          lead_id: leadId,
+          direction: "outbound",
+          wa_message_id: json?.messages?.[0]?.id ?? null,
+          to_phone: to,
+          body: `[template: ${data.templateName}] ${data.bodyParams.join(" | ")}`,
+          message_type: "template",
+          template_name: data.templateName,
+          status: "sent",
+          sent_by: userId,
+          raw: json,
+        });
+        await supabase.from("whatsapp_conversations").update({
+          last_message_at: new Date().toISOString(),
+          last_message_preview: `[template] ${data.templateName}`,
+        }).eq("id", conversationId);
+      }
+    }
+
+    return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null };
+  });
+
+/** Lista templates aprovados da WABA (usa WHATSAPP_BUSINESS_ACCOUNT_ID). */
+export const listWhatsAppTemplates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    const wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+    if (!token || !wabaId) {
+      return { ok: false as const, error: "Configure WHATSAPP_BUSINESS_ACCOUNT_ID para listar templates." };
+    }
+    const res = await fetch(
+      `https://graph.facebook.com/v20.0/${wabaId}/message_templates?fields=name,status,language,category,components&limit=100`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
+    const templates = (json.data ?? []).filter((t: any) => t.status === "APPROVED");
+    return { ok: true as const, templates };
+  });
