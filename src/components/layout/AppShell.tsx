@@ -9,7 +9,7 @@ import {
   Users,
   Workflow,
   MessageCircle,
-  Comments,
+  MessageSquare,
   LogOut,
   Menu,
   X,
