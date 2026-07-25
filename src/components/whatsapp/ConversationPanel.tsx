@@ -95,7 +95,11 @@ export function ConversationPanel({
     queryFn: async () => {
       if (conversationId) {
         const r = (await listMsgs({ data: { conversationId } })) as
-          | { ok: true; conversation: { id: string; phone: string; last_inbound_at: string | null } | null; messages: Msg[] }
+          | {
+              ok: true;
+              conversation: { id: string; phone: string; last_inbound_at: string | null } | null;
+              messages: Msg[];
+            }
           | { ok: false; error: string };
         if (!r.ok) throw new Error(r.error);
         return {
@@ -159,7 +163,8 @@ export function ConversationPanel({
 
   // marcar como lido ao abrir
   useEffect(() => {
-    if (effectiveConversationId) void markRead({ data: { conversationId: effectiveConversationId } });
+    if (effectiveConversationId)
+      void markRead({ data: { conversationId: effectiveConversationId } });
   }, [effectiveConversationId, markRead]);
 
   useEffect(() => {
@@ -218,12 +223,18 @@ export function ConversationPanel({
   });
 
   return (
-    <div className={`flex ${compact ? "h-[420px]" : "h-full"} flex-col rounded-lg border border-border/60 bg-card`}>
+    <div
+      className={`flex ${compact ? "h-[420px]" : "h-full"} flex-col rounded-lg border border-border/60 bg-card`}
+    >
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
         <div className="flex items-center gap-2 text-sm">
           <span className="font-mono text-muted-foreground">{effectivePhone ?? "—"}</span>
         </div>
-        <Window24hBadge open={window24h.open} remainingMs={window24h.remainingMs} hasInbound={!!lastInboundAt} />
+        <Window24hBadge
+          open={window24h.open}
+          remainingMs={window24h.remainingMs}
+          hasInbound={!!lastInboundAt}
+        />
       </div>
 
       <ScrollArea className="flex-1 px-3 py-3">
@@ -266,7 +277,8 @@ export function ConversationPanel({
                 <b>Janela de 24h fechada.</b>
               </div>
               <p className="text-muted-foreground">
-                Fora da janela, o WhatsApp só aceita <b>mensagens de modelo (template)</b> aprovadas pela Meta.
+                Fora da janela, o WhatsApp só aceita <b>mensagens de modelo (template)</b> aprovadas
+                pela Meta.
               </p>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" disabled={!effectivePhone}>
@@ -287,7 +299,6 @@ export function ConversationPanel({
           />
         </Dialog>
       </div>
-
     </div>
   );
 }
@@ -312,7 +323,10 @@ function Window24hBadge({
     const h = Math.floor(remainingMs / 3600_000);
     const m = Math.floor((remainingMs % 3600_000) / 60_000);
     return (
-      <Badge className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-400" variant="outline">
+      <Badge
+        className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+        variant="outline"
+      >
         <ShieldCheck className="h-3 w-3" /> Janela 24h · {h}h{m}m
       </Badge>
     );
@@ -349,7 +363,12 @@ function MessageBubble({ m }: { m: Msg }) {
         <div className="whitespace-pre-wrap break-words">{m.body ?? "—"}</div>
         <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-70">
           {time}
-          {isOut && (m.status === "read" ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />)}
+          {isOut &&
+            (m.status === "read" ? (
+              <CheckCheck className="h-3 w-3" />
+            ) : (
+              <Check className="h-3 w-3" />
+            ))}
         </div>
       </div>
     </li>
@@ -419,7 +438,8 @@ function TemplateDialog({
       </DialogHeader>
       <div className="grid gap-3">
         <p className="text-xs text-muted-foreground">
-          Templates devem estar <b>aprovados</b> na Meta. Fora da janela de 24h só é possível iniciar conversa com template.
+          Templates devem estar <b>aprovados</b> na Meta. Fora da janela de 24h só é possível
+          iniciar conversa com template.
         </p>
 
         {q.isLoading ? (
@@ -448,7 +468,11 @@ function TemplateDialog({
                 : "Nenhum template aprovado encontrado. Digite o nome manualmente."}
             </div>
             <label className="text-sm font-medium">Nome do template</label>
-            <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="hello_world" />
+            <Input
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+              placeholder="hello_world"
+            />
           </div>
         )}
 
@@ -479,7 +503,11 @@ function TemplateDialog({
         )}
       </div>
       <DialogFooter>
-        <Button className="grad-brand text-primary-foreground" onClick={() => mut.mutate()} disabled={mut.isPending}>
+        <Button
+          className="grad-brand text-primary-foreground"
+          onClick={() => mut.mutate()}
+          disabled={mut.isPending}
+        >
           {mut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Enviar template
         </Button>

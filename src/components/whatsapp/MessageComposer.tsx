@@ -8,15 +8,70 @@ import { toast } from "sonner";
 const EMOJI_GROUPS: { label: string; items: string[] }[] = [
   {
     label: "Frequentes",
-    items: ["😀", "😁", "😂", "🤣", "😊", "😍", "😉", "👍", "👏", "🙏", "🔥", "🎉", "✅", "❤️", "💪", "🚀"],
+    items: [
+      "😀",
+      "😁",
+      "😂",
+      "🤣",
+      "😊",
+      "😍",
+      "😉",
+      "👍",
+      "👏",
+      "🙏",
+      "🔥",
+      "🎉",
+      "✅",
+      "❤️",
+      "💪",
+      "🚀",
+    ],
   },
   {
     label: "Rostos",
-    items: ["😃", "😄", "🙂", "😇", "🤩", "😘", "😎", "🤔", "🤗", "😴", "😢", "😭", "😤", "😅", "🥰", "😬", "🙄", "😳", "🤝", "🫡"],
+    items: [
+      "😃",
+      "😄",
+      "🙂",
+      "😇",
+      "🤩",
+      "😘",
+      "😎",
+      "🤔",
+      "🤗",
+      "😴",
+      "😢",
+      "😭",
+      "😤",
+      "😅",
+      "🥰",
+      "😬",
+      "🙄",
+      "😳",
+      "🤝",
+      "🫡",
+    ],
   },
   {
     label: "Negócios",
-    items: ["📞", "📱", "💬", "📧", "📅", "⏰", "📈", "📊", "💼", "💰", "🏆", "📌", "📝", "🔗", "⚡", "🎯"],
+    items: [
+      "📞",
+      "📱",
+      "💬",
+      "📧",
+      "📅",
+      "⏰",
+      "📈",
+      "📊",
+      "💼",
+      "💰",
+      "🏆",
+      "📌",
+      "📝",
+      "🔗",
+      "⚡",
+      "🎯",
+    ],
   },
 ];
 
@@ -134,7 +189,12 @@ export function MessageComposer({
         </span>
         <span className="font-mono text-sm tabular-nums">{formatTime(seconds)}</span>
         <span className="flex-1 text-xs text-muted-foreground">Gravando nota de voz…</span>
-        <Button size="icon" variant="ghost" onClick={() => stopRecording(true)} aria-label="Cancelar gravação">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => stopRecording(true)}
+          aria-label="Cancelar gravação"
+        >
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
         <Button
@@ -154,7 +214,12 @@ export function MessageComposer({
       <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-surface p-1.5">
         <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
           <PopoverTrigger asChild>
-            <Button size="icon" variant="ghost" className="shrink-0 rounded-full" aria-label="Emojis">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="shrink-0 rounded-full"
+              aria-label="Emojis"
+            >
               <Smile className="h-5 w-5 text-muted-foreground" />
             </Button>
           </PopoverTrigger>
@@ -162,7 +227,9 @@ export function MessageComposer({
             <div className="grid max-h-64 gap-3 overflow-y-auto">
               {EMOJI_GROUPS.map((g) => (
                 <div key={g.label}>
-                  <div className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">{g.label}</div>
+                  <div className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {g.label}
+                  </div>
                   <div className="grid grid-cols-8 gap-1">
                     {g.items.map((e) => (
                       <button
@@ -234,7 +301,11 @@ export function MessageComposer({
                 onClick={startRecording}
                 aria-label="Gravar áudio"
               >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>Gravar nota de voz</TooltipContent>
