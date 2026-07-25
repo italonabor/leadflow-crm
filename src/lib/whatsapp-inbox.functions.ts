@@ -17,7 +17,9 @@ export const listConversations = createServerFn({ method: "POST" })
     const { supabase } = context as { supabase: any };
     const { data, error } = await supabase
       .from("whatsapp_conversations")
-      .select("id, phone, lead_id, last_inbound_at, last_message_at, last_message_preview, unread_count, leads(nome, telefone)")
+      .select(
+        "id, phone, lead_id, last_inbound_at, last_message_at, last_message_preview, unread_count, leads(nome, telefone)",
+      )
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(200);
     if (error) return { ok: false as const, error: String(error.message ?? error) };
@@ -37,7 +39,9 @@ export const listConversationMessages = createServerFn({ method: "POST" })
       .maybeSingle();
     const { data: msgs, error } = await supabase
       .from("whatsapp_messages")
-      .select("id, direction, body, wa_message_id, message_type, template_name, status, created_at, sent_by")
+      .select(
+        "id, direction, body, wa_message_id, message_type, template_name, status, created_at, sent_by",
+      )
       .eq("conversation_id", data.conversationId)
       .order("created_at", { ascending: true });
     if (error) return { ok: false as const, error: String(error.message ?? error) };
@@ -87,12 +91,14 @@ export const markConversationRead = createServerFn({ method: "POST" })
 export const sendTextInConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      conversationId: z.string().uuid().optional(),
-      leadId: z.string().uuid().optional(),
-      to: z.string().min(6),
-      body: z.string().min(1),
-    }).parse(d),
+    z
+      .object({
+        conversationId: z.string().uuid().optional(),
+        leadId: z.string().uuid().optional(),
+        to: z.string().min(6),
+        body: z.string().min(1),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as { supabase: any; userId: string };
@@ -101,19 +107,16 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
     if (!token || !phoneId) return { ok: false as const, error: "WhatsApp não configurado" };
 
     const to = normalizePhone(data.to);
-    const res = await fetch(
-      `https://graph.facebook.com/v20.0/${phoneId}/messages`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to,
-          type: "text",
-          text: { preview_url: true, body: data.body },
-        }),
-      },
-    );
+    const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: { preview_url: true, body: data.body },
+      }),
+    });
     const json: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
@@ -124,13 +127,18 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
     let leadId = data.leadId ?? null;
     // Descobre workspace do usuário
     const { data: ws } = await supabase
-      .from("workspace_members").select("workspace_id").eq("user_id", userId).limit(1).maybeSingle();
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
     const workspaceId = ws?.workspace_id;
 
     if (!conversationId && workspaceId) {
       if (!leadId) {
         const { data: found } = await supabase.rpc("find_lead_by_phone", {
-          _workspace_id: workspaceId, _phone: to,
+          _workspace_id: workspaceId,
+          _phone: to,
         });
         leadId = found ?? null;
       }
@@ -156,10 +164,13 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
         sent_by: userId,
         raw: json,
       });
-      await supabase.from("whatsapp_conversations").update({
-        last_message_at: new Date().toISOString(),
-        last_message_preview: data.body.slice(0, 200),
-      }).eq("id", conversationId);
+      await supabase
+        .from("whatsapp_conversations")
+        .update({
+          last_message_at: new Date().toISOString(),
+          last_message_preview: data.body.slice(0, 200),
+        })
+        .eq("id", conversationId);
     }
 
     return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
@@ -169,14 +180,16 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
 export const sendTemplateInConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      to: z.string().min(6),
-      templateName: z.string().min(1),
-      language: z.string().default("pt_BR"),
-      bodyParams: z.array(z.string()).default([]),
-      conversationId: z.string().uuid().optional(),
-      leadId: z.string().uuid().optional(),
-    }).parse(d),
+    z
+      .object({
+        to: z.string().min(6),
+        templateName: z.string().min(1),
+        language: z.string().default("pt_BR"),
+        bodyParams: z.array(z.string()).default([]),
+        conversationId: z.string().uuid().optional(),
+        leadId: z.string().uuid().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as { supabase: any; userId: string };
@@ -189,29 +202,30 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
       ? [{ type: "body", parameters: data.bodyParams.map((t) => ({ type: "text", text: t })) }]
       : undefined;
 
-    const res = await fetch(
-      `https://graph.facebook.com/v20.0/${phoneId}/messages`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to,
-          type: "template",
-          template: {
-            name: data.templateName,
-            language: { code: data.language },
-            ...(components ? { components } : {}),
-          },
-        }),
-      },
-    );
+    const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "template",
+        template: {
+          name: data.templateName,
+          language: { code: data.language },
+          ...(components ? { components } : {}),
+        },
+      }),
+    });
     const json: any = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
 
     // Persistir como outbound (mesma lógica de upsert)
     const { data: ws } = await supabase
-      .from("workspace_members").select("workspace_id").eq("user_id", userId).limit(1).maybeSingle();
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
     const workspaceId = ws?.workspace_id;
     let conversationId = data.conversationId;
     let leadId = data.leadId ?? null;
@@ -220,7 +234,8 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
       if (!conversationId) {
         if (!leadId) {
           const { data: found } = await supabase.rpc("find_lead_by_phone", {
-            _workspace_id: workspaceId, _phone: to,
+            _workspace_id: workspaceId,
+            _phone: to,
           });
           leadId = found ?? null;
         }
@@ -246,10 +261,13 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
           sent_by: userId,
           raw: json,
         });
-        await supabase.from("whatsapp_conversations").update({
-          last_message_at: new Date().toISOString(),
-          last_message_preview: `[template] ${data.templateName}`,
-        }).eq("id", conversationId);
+        await supabase
+          .from("whatsapp_conversations")
+          .update({
+            last_message_at: new Date().toISOString(),
+            last_message_preview: `[template] ${data.templateName}`,
+          })
+          .eq("id", conversationId);
       }
     }
 
@@ -263,7 +281,10 @@ export const listWhatsAppTemplates = createServerFn({ method: "POST" })
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
     const wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
     if (!token || !wabaId) {
-      return { ok: false as const, error: "Configure WHATSAPP_BUSINESS_ACCOUNT_ID para listar templates." };
+      return {
+        ok: false as const,
+        error: "Configure WHATSAPP_BUSINESS_ACCOUNT_ID para listar templates.",
+      };
     }
     const res = await fetch(
       `https://graph.facebook.com/v20.0/${wabaId}/message_templates?fields=name,status,language,category,components&limit=100`,
@@ -279,13 +300,15 @@ export const listWhatsAppTemplates = createServerFn({ method: "POST" })
 export const sendAudioInConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      to: z.string().min(6),
-      audioBase64: z.string().min(10),
-      mimeType: z.string().default("audio/ogg"),
-      conversationId: z.string().uuid().optional(),
-      leadId: z.string().uuid().optional(),
-    }).parse(d),
+    z
+      .object({
+        to: z.string().min(6),
+        audioBase64: z.string().min(10),
+        mimeType: z.string().default("audio/ogg"),
+        conversationId: z.string().uuid().optional(),
+        leadId: z.string().uuid().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context as { supabase: any; userId: string };
@@ -311,7 +334,7 @@ export const sendAudioInConversation = createServerFn({ method: "POST" })
       "audio/amr": "amr",
       "audio/ogg": "ogg",
     };
-    const mime = raw === "audio/mp3" ? "audio/mpeg" : (ALLOWED[raw] ? raw : "audio/mpeg");
+    const mime = raw === "audio/mp3" ? "audio/mpeg" : ALLOWED[raw] ? raw : "audio/mpeg";
     const ext = ALLOWED[raw] ?? "mp3";
 
     const form = new FormData();
@@ -326,19 +349,31 @@ export const sendAudioInConversation = createServerFn({ method: "POST" })
     });
     const upJson: any = await up.json().catch(() => ({}));
     if (!up.ok || !upJson?.id) {
-      return { ok: false as const, error: upJson?.error?.message ?? `Falha no upload do áudio (HTTP ${up.status})` };
+      return {
+        ok: false as const,
+        error: upJson?.error?.message ?? `Falha no upload do áudio (HTTP ${up.status})`,
+      };
     }
 
     const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ messaging_product: "whatsapp", to, type: "audio", audio: { id: upJson.id } }),
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "audio",
+        audio: { id: upJson.id },
+      }),
     });
     const json: any = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
 
     const { data: ws } = await supabase
-      .from("workspace_members").select("workspace_id").eq("user_id", userId).limit(1).maybeSingle();
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
     const workspaceId = ws?.workspace_id;
     let conversationId = data.conversationId;
     let leadId = data.leadId ?? null;
@@ -346,12 +381,15 @@ export const sendAudioInConversation = createServerFn({ method: "POST" })
     if (workspaceId && !conversationId) {
       if (!leadId) {
         const { data: found } = await supabase.rpc("find_lead_by_phone", {
-          _workspace_id: workspaceId, _phone: to,
+          _workspace_id: workspaceId,
+          _phone: to,
         });
         leadId = found ?? null;
       }
       const { data: cid } = await supabase.rpc("upsert_wa_conversation", {
-        _workspace_id: workspaceId, _phone: to, _lead_id: leadId,
+        _workspace_id: workspaceId,
+        _phone: to,
+        _lead_id: leadId,
       });
       conversationId = cid ?? undefined;
     }
@@ -370,10 +408,13 @@ export const sendAudioInConversation = createServerFn({ method: "POST" })
         sent_by: userId,
         raw: json,
       });
-      await supabase.from("whatsapp_conversations").update({
-        last_message_at: new Date().toISOString(),
-        last_message_preview: "[áudio]",
-      }).eq("id", conversationId);
+      await supabase
+        .from("whatsapp_conversations")
+        .update({
+          last_message_at: new Date().toISOString(),
+          last_message_preview: "[áudio]",
+        })
+        .eq("id", conversationId);
     }
 
     return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
