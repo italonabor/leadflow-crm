@@ -81,14 +81,37 @@ function TeamPage() {
         invited_by: user.id,
       });
       if (error) throw error;
+      return { token, email: email.trim().toLowerCase() };
     },
-    onSuccess: () => {
-      toast.success("Convite criado. Envie o link para o atendente.");
+    onSuccess: async (res) => {
+      const link = inviteLink(res.token);
+      try {
+        await navigator.clipboard.writeText(link);
+        toast.success("Convite criado e link copiado — envie ao vendedor.");
+      } catch {
+        toast.success("Convite criado. Copie o link na lista abaixo.");
+      }
       setEmail("");
       qc.invalidateQueries({ queryKey: ["invites", ws?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  function mailtoLink(to: string, token: string) {
+    const subject = encodeURIComponent("Convite para o CRM Prospecta");
+    const body = encodeURIComponent(
+      `Olá!\n\nVocê foi convidado como vendedor no CRM Prospecta.\n\n1) Crie sua conta usando este mesmo e-mail: ${to}\n2) Abra o link do convite: ${inviteLink(token)}\n\nO convite expira em 7 dias.`,
+    );
+    return `mailto:${to}?subject=${subject}&body=${body}`;
+  }
+
+  function whatsappLink(token: string) {
+    const text = encodeURIComponent(
+      `Olá! Você foi convidado como vendedor no CRM Prospecta. Crie sua conta e abra este link: ${inviteLink(token)}`,
+    );
+    return `https://wa.me/?text=${text}`;
+  }
+
 
   const revoke = useMutation({
     mutationFn: async (id: string) => {
