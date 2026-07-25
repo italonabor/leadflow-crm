@@ -30,13 +30,18 @@ export const listConversationMessages = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ conversationId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context as { supabase: any };
+    const { data: conv } = await supabase
+      .from("whatsapp_conversations")
+      .select("id, phone, last_inbound_at")
+      .eq("id", data.conversationId)
+      .maybeSingle();
     const { data: msgs, error } = await supabase
       .from("whatsapp_messages")
       .select("id, direction, body, wa_message_id, message_type, template_name, status, created_at, sent_by")
       .eq("conversation_id", data.conversationId)
       .order("created_at", { ascending: true });
     if (error) return { ok: false as const, error: String(error.message ?? error) };
-    return { ok: true as const, messages: msgs ?? [] };
+    return { ok: true as const, conversation: conv ?? null, messages: msgs ?? [] };
   });
 
 /** Mensagens vinculadas a um lead (para o painel de chat dentro do card do lead). */
