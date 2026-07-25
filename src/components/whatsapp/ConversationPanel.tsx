@@ -221,58 +221,48 @@ export function ConversationPanel({
       </ScrollArea>
 
       <div className="border-t border-border/60 p-2">
-        {window24h.open ? (
-          <div className="flex items-end gap-2">
-            <Textarea
-              rows={2}
-              placeholder="Digite sua mensagem…"
+        <Dialog open={tplOpen} onOpenChange={setTplOpen}>
+          {window24h.open ? (
+            <MessageComposer
               value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  if (text.trim()) sendMut.mutate();
-                }
+              onChange={setText}
+              sending={sendMut.isPending}
+              disabled={!effectivePhone}
+              onSend={() => sendMut.mutate()}
+              onSendAudio={async (base64, mimeType) => {
+                await audioMut.mutateAsync({ base64, mimeType });
               }}
-              className="min-h-[44px] resize-none"
+              onOpenTemplates={() => setTplOpen(true)}
             />
-            <Button
-              className="grad-brand text-primary-foreground"
-              disabled={!text.trim() || sendMut.isPending || !effectivePhone}
-              onClick={() => sendMut.mutate()}
-            >
-              {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-            <div className="flex items-center gap-2 text-amber-400">
-              <ShieldAlert className="h-4 w-4" />
-              <b>Janela de 24h fechada.</b>
-            </div>
-            <p className="text-muted-foreground">
-              Fora da janela, o WhatsApp só aceita <b>mensagens de modelo (template)</b> aprovadas pela Meta.
-            </p>
-            <Dialog open={tplOpen} onOpenChange={setTplOpen}>
+          ) : (
+            <div className="grid gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+              <div className="flex items-center gap-2 text-amber-400">
+                <ShieldAlert className="h-4 w-4" />
+                <b>Janela de 24h fechada.</b>
+              </div>
+              <p className="text-muted-foreground">
+                Fora da janela, o WhatsApp só aceita <b>mensagens de modelo (template)</b> aprovadas pela Meta.
+              </p>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" disabled={!effectivePhone}>
                   <FileText className="mr-2 h-4 w-4" /> Enviar mensagem de modelo
                 </Button>
               </DialogTrigger>
-              <TemplateDialog
-                to={effectivePhone ?? ""}
-                conversationId={effectiveConversationId ?? undefined}
-                leadId={leadId ?? undefined}
-                onSent={() => {
-                  setTplOpen(false);
-                  qc.invalidateQueries({ queryKey: key });
-                  qc.invalidateQueries({ queryKey: ["wa-conversations"] });
-                }}
-              />
-            </Dialog>
-          </div>
-        )}
+            </div>
+          )}
+          <TemplateDialog
+            to={effectivePhone ?? ""}
+            conversationId={effectiveConversationId ?? undefined}
+            leadId={leadId ?? undefined}
+            onSent={() => {
+              setTplOpen(false);
+              qc.invalidateQueries({ queryKey: key });
+              qc.invalidateQueries({ queryKey: ["wa-conversations"] });
+            }}
+          />
+        </Dialog>
       </div>
+
     </div>
   );
 }
