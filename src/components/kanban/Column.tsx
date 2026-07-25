@@ -1,5 +1,5 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Phone, Link as LinkIcon, AtSign, Briefcase, GripVertical, Pencil, MessageCircle, Copy } from "lucide-react";
+import { Phone, Link as LinkIcon, AtSign, Briefcase, Pencil, MessageCircle, Copy } from "lucide-react";
 import type { Lead, Stage } from "./types";
 import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
@@ -28,76 +28,78 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
     <div
       ref={setNodeRef}
       style={style}
+      {...listeners}
+      {...attributes}
       className={cn(
-        "group rounded-md border border-border/70 bg-card px-2 py-1.5 shadow-card transition hover:border-primary/40",
+        "group cursor-grab touch-none rounded-md border border-border/70 bg-card px-2 py-1 shadow-card transition hover:border-primary/40 active:cursor-grabbing",
         isDragging && "opacity-40",
       )}
     >
-      <div className="flex items-center gap-1.5">
-        <button
-          {...listeners}
-          {...attributes}
-          className="cursor-grab touch-none text-muted-foreground/50 opacity-0 transition group-hover:opacity-100 active:cursor-grabbing"
-          aria-label="Arrastar"
-        >
-          <GripVertical className="h-3 w-3" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-1.5">
-            <h4 className="truncate text-[13px] font-semibold leading-tight">{lead.nome}</h4>
-            <div className="flex shrink-0 items-center gap-0.5">
-              {lead.telefone && (
-                <a
-                  href={buildWhatsAppLink(lead.telefone, renderTemplate(stage?.message_template, lead))}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="rounded p-0.5 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
-                  aria-label="Abrir WhatsApp"
-                >
-                  <MessageCircle className="h-3 w-3" />
-                </a>
-              )}
-              <button
-                onClick={onEdit}
-                className="rounded p-0.5 text-muted-foreground opacity-0 transition hover:bg-surface-2 hover:text-foreground group-hover:opacity-100"
-                aria-label="Editar"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-tight text-muted-foreground">
-            {lead.profissao && (
-              <span className="flex min-w-0 items-center gap-1 truncate"><Briefcase className="h-2.5 w-2.5 shrink-0" />{lead.profissao}</span>
-            )}
+      <div className="min-w-0">
+        <div className="flex items-center justify-between gap-1.5">
+          <h4 className="truncate text-[12px] font-semibold leading-tight">{lead.nome}</h4>
+          <div
+            className="flex shrink-0 items-center gap-0.5"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             {lead.telefone && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); copyToClipboard(lead.telefone!); }}
-                className="flex min-w-0 items-center gap-1 truncate hover:text-foreground"
-                title="Clique para copiar"
-              >
-                <Phone className="h-2.5 w-2.5 shrink-0" />
-                <span className="truncate">{lead.telefone}</span>
-                <Copy className="h-2.5 w-2.5 shrink-0 opacity-40" />
-              </button>
-            )}
-            {lead.rede_social && (
-              <span className="flex min-w-0 items-center gap-1 truncate"><AtSign className="h-2.5 w-2.5 shrink-0" />{lead.rede_social}</span>
-            )}
-            {lead.link && (
               <a
-                href={lead.link}
+                href={buildWhatsAppLink(lead.telefone, renderTemplate(stage?.message_template, lead))}
                 target="_blank"
                 rel="noreferrer"
-                className="flex min-w-0 items-center gap-1 truncate text-primary hover:underline"
                 onClick={(e) => e.stopPropagation()}
+                className="rounded p-0.5 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
+                aria-label="Abrir WhatsApp"
               >
-                <LinkIcon className="h-2.5 w-2.5 shrink-0" /><span className="truncate">{lead.link}</span>
+                <MessageCircle className="h-3 w-3" />
               </a>
             )}
+            <button
+              onClick={onEdit}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition hover:bg-surface-2 hover:text-foreground group-hover:opacity-100"
+              aria-label="Editar"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
           </div>
+        </div>
+        <div
+          className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] leading-tight text-muted-foreground"
+          onPointerDown={(e) => {
+            // permite arrastar a partir dos textos, mas botões/links internos param propagação
+          }}
+        >
+          {lead.profissao && (
+            <span className="flex min-w-0 items-center gap-1 truncate"><Briefcase className="h-2.5 w-2.5 shrink-0" />{lead.profissao}</span>
+          )}
+          {lead.telefone && (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); copyToClipboard(lead.telefone!); }}
+              className="flex min-w-0 items-center gap-1 truncate hover:text-foreground"
+              title="Clique para copiar"
+            >
+              <Phone className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{lead.telefone}</span>
+              <Copy className="h-2.5 w-2.5 shrink-0 opacity-40" />
+            </button>
+          )}
+          {lead.rede_social && (
+            <span className="flex min-w-0 items-center gap-1 truncate"><AtSign className="h-2.5 w-2.5 shrink-0" />{lead.rede_social}</span>
+          )}
+          {lead.link && (
+            <a
+              href={lead.link}
+              target="_blank"
+              rel="noreferrer"
+              className="flex min-w-0 items-center gap-1 truncate text-primary hover:underline"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <LinkIcon className="h-2.5 w-2.5 shrink-0" /><span className="truncate">{lead.link}</span>
+            </a>
+          )}
         </div>
       </div>
     </div>
@@ -121,7 +123,7 @@ export function Column({
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col">
+    <div className="flex h-full w-60 shrink-0 flex-col">
       <div className="mb-2 flex items-center justify-between px-1">
         <button onClick={onEditStage} className="group flex min-w-0 items-center gap-2 text-left">
           <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
