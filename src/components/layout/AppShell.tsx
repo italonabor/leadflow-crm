@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 type NavItem = {
-  to: "/board" | "/team" | "/whatsapp" | "/integrations";
+  to: "/board" | "/team" | "/whatsapp" | "/chat" | "/integrations";
   label: string;
   icon: ReactNode;
   adminOnly?: boolean;
