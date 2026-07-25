@@ -78,7 +78,7 @@ export function InviteBanner({ userId }: { userId: string }) {
         >
           <Mail className="h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
-            Você foi convidado como <b>{inv.role === "admin" ? "Administrador" : "Atendente"}</b>
+            Você foi convidado como <b>{inv.role === "admin" ? "Administrador" : "Vendedor"}</b>
             {inv.workspaces?.name && <> para o workspace <b>{inv.workspaces.name}</b></>}.
           </div>
           <Button size="sm" className="grad-brand text-primary-foreground" onClick={() => accept.mutate(inv)} disabled={accept.isPending}>

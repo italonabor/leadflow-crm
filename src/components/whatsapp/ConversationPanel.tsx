@@ -30,6 +30,8 @@ import {
   FileText,
   CheckCheck,
   Check,
+  Download,
+  Play,
 } from "lucide-react";
 import {
   listConversationMessages,
@@ -39,6 +41,7 @@ import {
   sendTextInConversation,
   listWhatsAppTemplates,
   sendAudioInConversation,
+  fetchWhatsAppMedia,
 } from "@/lib/whatsapp-inbox.functions";
 import { MessageComposer } from "./MessageComposer";
 
@@ -336,8 +339,113 @@ function Window24hBadge({
   );
 }
 
+function MediaAttachment({ m }: { m: Msg }) {
+  const fetchMedia = useServerFn(fetchWhatsAppMedia);
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [url, setUrl] = useState<string | null>(null);
+  const [mime, setMime] = useState<string>("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const type = (m.message_type ?? "").toLowerCase();
+  const isAudio = type === "audio" || type === "voice";
+  const isImage = type === "image" || type === "sticker";
+  const isVideo = type === "video";
+  const isDoc = type === "document";
+
+  async function load() {
+    setState("loading");
+    try {
+      const r = (await fetchMedia({ data: { messageId: m.id } })) as
+        | { ok: true; dataUrl: string; mimeType: string; filename: string | null }
+        | { ok: false; error: string };
+      if (!r.ok) throw new Error(r.error);
+      setUrl(r.dataUrl);
+      setMime(r.mimeType);
+      setState("ready");
+    } catch (e) {
+      setErr((e as Error).message);
+      setState("error");
+    }
+  }
+
+  // Áudio recebido: carrega automaticamente para já ficar pronto para ouvir.
+  useEffect(() => {
+    if (isAudio && state === "idle") void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAudio, m.id]);
+
+  if (state === "ready" && url) {
+    if (isAudio) {
+      return (
+        <audio
+          controls
+          preload="metadata"
+          src={url}
+          className="mt-1 h-10 w-[240px] max-w-full"
+        />
+      );
+    }
+    if (isImage) {
+      return (
+        <img
+          src={url}
+          alt="Imagem recebida no WhatsApp"
+          loading="lazy"
+          className="mt-1 max-h-64 w-auto rounded-lg"
+        />
+      );
+    }
+    if (isVideo) {
+      return <video controls src={url} className="mt-1 max-h-64 w-full rounded-lg" />;
+    }
+    return (
+      <a
+        href={url}
+        download
+        className="mt-1 inline-flex items-center gap-1 text-xs underline opacity-90"
+      >
+        <Download className="h-3 w-3" /> Baixar arquivo ({mime})
+      </a>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <Button
+        size="sm"
+        variant="secondary"
+        className="h-7 gap-1 px-2 text-xs"
+        onClick={() => void load()}
+        disabled={state === "loading"}
+      >
+        {state === "loading" ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : isAudio ? (
+          <Play className="h-3 w-3" />
+        ) : (
+          <Download className="h-3 w-3" />
+        )}
+        {state === "loading"
+          ? "Carregando…"
+          : state === "error"
+            ? "Tentar de novo"
+            : isAudio
+              ? "Ouvir áudio"
+              : isDoc
+                ? "Abrir documento"
+                : "Carregar mídia"}
+      </Button>
+      {state === "error" && err && (
+        <div className="mt-1 text-[10px] text-amber-400">{err}</div>
+      )}
+    </div>
+  );
+}
+
 function MessageBubble({ m }: { m: Msg }) {
   const isOut = m.direction === "outbound";
+  const type = (m.message_type ?? "").toLowerCase();
+  const hasMedia = ["audio", "voice", "image", "video", "document", "sticker"].includes(type);
   const time = new Date(m.created_at).toLocaleString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
@@ -358,7 +466,16 @@ function MessageBubble({ m }: { m: Msg }) {
             <FileText className="h-3 w-3" /> template · {m.template_name}
           </div>
         )}
-        <div className="whitespace-pre-wrap break-words">{m.body ?? "—"}</div>
+        {hasMedia ? (
+          <>
+            {m.body && !/^(\[|🎤|🖼️|🎬|📎|📍)/.test(m.body) && (
+              <div className="whitespace-pre-wrap break-words">{m.body}</div>
+            )}
+            <MediaAttachment m={m} />
+          </>
+        ) : (
+          <div className="whitespace-pre-wrap break-words">{m.body ?? "—"}</div>
+        )}
         <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-70">
           {time}
           {isOut &&
@@ -372,6 +489,7 @@ function MessageBubble({ m }: { m: Msg }) {
     </li>
   );
 }
+
 
 function TemplateDialog({
   to,

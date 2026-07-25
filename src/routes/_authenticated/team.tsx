@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Trash2, Copy, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Loader2, Trash2, Copy, Mail, MessageCircle, ShieldCheck, User as UserIcon } from "lucide-react";
 import { AppShell, PageContainer } from "@/components/layout/AppShell";
 
 export const Route = createFileRoute("/_authenticated/team")({
@@ -81,14 +81,37 @@ function TeamPage() {
         invited_by: user.id,
       });
       if (error) throw error;
+      return { token, email: email.trim().toLowerCase() };
     },
-    onSuccess: () => {
-      toast.success("Convite criado. Envie o link para o atendente.");
+    onSuccess: async (res) => {
+      const link = inviteLink(res.token);
+      try {
+        await navigator.clipboard.writeText(link);
+        toast.success("Convite criado e link copiado — envie ao vendedor.");
+      } catch {
+        toast.success("Convite criado. Copie o link na lista abaixo.");
+      }
       setEmail("");
       qc.invalidateQueries({ queryKey: ["invites", ws?.id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  function mailtoLink(to: string, token: string) {
+    const subject = encodeURIComponent("Convite para o CRM Prospecta");
+    const body = encodeURIComponent(
+      `Olá!\n\nVocê foi convidado como vendedor no CRM Prospecta.\n\n1) Crie sua conta usando este mesmo e-mail: ${to}\n2) Abra o link do convite: ${inviteLink(token)}\n\nO convite expira em 7 dias.`,
+    );
+    return `mailto:${to}?subject=${subject}&body=${body}`;
+  }
+
+  function whatsappLink(token: string) {
+    const text = encodeURIComponent(
+      `Olá! Você foi convidado como vendedor no CRM Prospecta. Crie sua conta e abra este link: ${inviteLink(token)}`,
+    );
+    return `https://wa.me/?text=${text}`;
+  }
+
 
   const revoke = useMutation({
     mutationFn: async (id: string) => {
@@ -132,7 +155,7 @@ function TeamPage() {
   }
 
   return (
-    <AppShell user={user} title="Equipe & atendentes">
+    <AppShell user={user} title="Equipe & vendedores">
       <PageContainer>
         {!ws ? (
           <div className="grid h-40 place-items-center">
@@ -142,13 +165,13 @@ function TeamPage() {
           <div className="space-y-8">
             {isAdmin && (
               <section className="rounded-xl border border-border/60 bg-card p-5 shadow-card">
-                <h2 className="mb-3 font-display text-lg font-semibold">Convidar atendente</h2>
+                <h2 className="mb-3 font-display text-lg font-semibold">Convidar vendedor</h2>
                 <div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]">
                   <div className="grid gap-1">
                     <Label>E-mail</Label>
                     <Input
                       type="email"
-                      placeholder="atendente@empresa.com"
+                      placeholder="vendedor@empresa.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -158,7 +181,7 @@ function TeamPage() {
                     <Select value={role} onValueChange={(v) => setRole(v as "admin" | "atendente")}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="atendente">Atendente</SelectItem>
+                        <SelectItem value="atendente">Vendedor</SelectItem>
                         <SelectItem value="admin">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
@@ -171,8 +194,10 @@ function TeamPage() {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Após criar, copie o link do convite abaixo. O atendente precisa criar conta com o
-                  mesmo e-mail e o convite aparece automaticamente para aceitação.
+                  Ao criar, o link do convite é copiado automaticamente. Você pode enviá-lo por
+                  e-mail ou WhatsApp nos botões da lista de convites pendentes. O vendedor precisa
+                  criar a conta com o mesmo e-mail e o convite aparece automaticamente para
+                  aceitação. (Envio automático de e-mail exige um domínio de e-mail configurado.)
                 </p>
               </section>
             )}
@@ -191,7 +216,7 @@ function TeamPage() {
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-2 py-0.5 text-xs">
                       {m.role === "admin" ? <ShieldCheck className="h-3 w-3 text-primary" /> : <UserIcon className="h-3 w-3" />}
-                      {m.role === "admin" ? "Admin" : "Atendente"}
+                      {m.role === "admin" ? "Admin" : "Vendedor"}
                     </span>
                     {isAdmin && m.user_id !== user.id && m.user_id !== ws.owner_id && (
                       <Button
@@ -221,12 +246,22 @@ function TeamPage() {
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium">{i.email}</div>
                         <div className="text-xs text-muted-foreground">
-                          {i.role === "admin" ? "Administrador" : "Atendente"} · expira{" "}
+                          {i.role === "admin" ? "Administrador" : "Vendedor"} · expira{" "}
                           {new Date(i.expires_at).toLocaleDateString("pt-BR")}
                         </div>
                       </div>
                       <Button variant="outline" size="sm" onClick={() => copy(inviteLink(i.token))}>
                         <Copy className="mr-2 h-3.5 w-3.5" /> Copiar link
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={mailtoLink(i.email, i.token)}>
+                          <Mail className="mr-2 h-3.5 w-3.5" /> Enviar por e-mail
+                        </a>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={whatsappLink(i.token)} target="_blank" rel="noreferrer">
+                          <MessageCircle className="mr-2 h-3.5 w-3.5" /> WhatsApp
+                        </a>
                       </Button>
                       <Button
                         variant="ghost"
