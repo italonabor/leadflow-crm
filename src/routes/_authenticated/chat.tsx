@@ -12,6 +12,16 @@ import { AppShell } from "@/components/layout/AppShell";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatPage,
+  head: () => ({
+    meta: [
+      { title: "Chat da equipe · Prospecta" },
+      { name: "description", content: "Chat interno entre administrador e atendentes do workspace." },
+      { property: "og:title", content: "Chat da equipe · Prospecta" },
+      { property: "og:description", content: "Chat interno entre administrador e atendentes do workspace." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 type Message = {
