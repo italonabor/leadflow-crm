@@ -134,17 +134,12 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
         });
         leadId = found ?? null;
       }
-      const { data: existing } = await supabase
-        .from("whatsapp_conversations").select("id")
-        .eq("workspace_id", workspaceId).eq("phone", to).maybeSingle();
-      if (existing?.id) conversationId = existing.id;
-      else {
-        const { data: created } = await supabase.from("whatsapp_conversations").insert({
-          workspace_id: workspaceId, phone: to, lead_id: leadId,
-          last_message_at: new Date().toISOString(),
-        }).select("id").single();
-        conversationId = created?.id;
-      }
+      const { data: cid } = await supabase.rpc("upsert_wa_conversation", {
+        _workspace_id: workspaceId,
+        _phone: to,
+        _lead_id: leadId,
+      });
+      conversationId = cid ?? undefined;
     }
 
     if (conversationId && workspaceId) {
