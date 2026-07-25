@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedWhatsappRouteImport } from './routes/_authenticated/whatsapp'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
+import { Route as AuthenticatedProspectRouteImport } from './routes/_authenticated/prospect'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated/integrations'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
@@ -48,6 +49,11 @@ const AuthenticatedWhatsappRoute = AuthenticatedWhatsappRouteImport.update({
 const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   id: '/team',
   path: '/team',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProspectRoute = AuthenticatedProspectRouteImport.update({
+  id: '/prospect',
+  path: '/prospect',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedIntegrationsRoute =
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/prospect': typeof AuthenticatedProspectRoute
   '/team': typeof AuthenticatedTeamRoute
   '/whatsapp': typeof AuthenticatedWhatsappRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/prospect': typeof AuthenticatedProspectRoute
   '/team': typeof AuthenticatedTeamRoute
   '/whatsapp': typeof AuthenticatedWhatsappRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
+  '/_authenticated/prospect': typeof AuthenticatedProspectRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/whatsapp': typeof AuthenticatedWhatsappRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/inbox'
     | '/integrations'
+    | '/prospect'
     | '/team'
     | '/whatsapp'
     | '/api/public/whatsapp-webhook'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/inbox'
     | '/integrations'
+    | '/prospect'
     | '/team'
     | '/whatsapp'
     | '/api/public/whatsapp-webhook'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/inbox'
     | '/_authenticated/integrations'
+    | '/_authenticated/prospect'
     | '/_authenticated/team'
     | '/_authenticated/whatsapp'
     | '/api/public/whatsapp-webhook'
@@ -208,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/prospect': {
+      id: '/_authenticated/prospect'
+      path: '/prospect'
+      fullPath: '/prospect'
+      preLoaderRoute: typeof AuthenticatedProspectRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/integrations': {
       id: '/_authenticated/integrations'
       path: '/integrations'
@@ -251,6 +270,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
+  AuthenticatedProspectRoute: typeof AuthenticatedProspectRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedWhatsappRoute: typeof AuthenticatedWhatsappRoute
 }
@@ -260,6 +280,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
+  AuthenticatedProspectRoute: AuthenticatedProspectRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedWhatsappRoute: AuthenticatedWhatsappRoute,
 }
@@ -277,13 +298,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
