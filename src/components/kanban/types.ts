@@ -16,6 +16,8 @@ export type Lead = {
   user_id: string;
   assigned_to: string | null;
   stage_id: string;
+  niche_id: string | null;
+
   nome: string;
   profissao: string | null;
   telefone: string | null;

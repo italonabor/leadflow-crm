@@ -23,6 +23,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NicheNav } from "@/components/layout/NicheNav";
+
 
 type NavItem = {
   to: "/board" | "/team" | "/inbox" | "/whatsapp" | "/prospect" | "/chat" | "/integrations";
