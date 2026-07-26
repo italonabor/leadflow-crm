@@ -316,12 +316,15 @@ function BoardPage() {
           userId={user.id}
           workspaceId={workspaceId}
           stages={stages}
+          niches={nichesQ.data ?? []}
+          defaultNicheId={activeNicheId}
           lead={leadDialog.lead}
           defaultStageId={leadDialog.stageId}
           open={leadDialog.open}
           onOpenChange={(o) => setLeadDialog({ open: o })}
         />
       )}
+
       {stageDialog.open && workspaceId && (
         <StageDialog
           key={stageDialog.stage?.id ?? "new-stage"}
@@ -339,16 +342,11 @@ function BoardPage() {
 
 function Kpi({ label, value, icon, accent }: { label: string; value: string; icon?: React.ReactNode; accent?: boolean }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/60 px-3 py-2">
-      {icon && (
-        <div className={`grid h-8 w-8 place-items-center rounded-md ${accent ? "bg-primary/15 text-primary" : "bg-surface-2 text-muted-foreground"}`}>
-          {icon}
-        </div>
-      )}
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-        <div className={`font-display text-lg font-bold leading-tight ${accent ? "text-primary" : ""}`}>{value}</div>
-      </div>
-    </div>
+    <span className="inline-flex items-center gap-1.5">
+      {icon && <span className={accent ? "text-primary" : "text-muted-foreground"}>{icon}</span>}
+      <span className="uppercase tracking-widest">{label}</span>
+      <span className={`font-semibold ${accent ? "text-primary" : "text-foreground"}`}>{value}</span>
+    </span>
   );
+
 }
