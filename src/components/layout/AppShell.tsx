@@ -111,8 +111,16 @@ export function AppShell({
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
-          <nav className="space-y-0.5 px-2">
+        <div className="flex-1 overflow-y-auto pb-2">
+          {ws && (
+            <NicheNav
+              userId={user.id}
+              workspaceId={ws.id}
+              onNavigate={() => setMobileOpen(false)}
+            />
+          )}
+
+          <nav className="mt-3 space-y-0.5 border-t border-border/60 px-2 pt-3">
             {NAV.map((item) => {
               const active = pathname === item.to || pathname.startsWith(item.to + "/");
               return (
@@ -132,15 +140,8 @@ export function AppShell({
               );
             })}
           </nav>
-
-          {ws && (
-            <NicheNav
-              userId={user.id}
-              workspaceId={ws.id}
-              onNavigate={() => setMobileOpen(false)}
-            />
-          )}
         </div>
+
 
 
         <div className="border-t border-border/60 p-3">
