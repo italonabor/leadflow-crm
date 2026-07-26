@@ -164,7 +164,15 @@ export function Column({
           </div>
 
         ) : (
-          leads.map((lead) => <LeadCard key={lead.id} lead={lead} stage={stage} onEdit={() => onEditLead(lead)} />)
+          leads.map((lead) => (
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              stage={stage}
+              hasUnread={unreadLeadIds?.has(lead.id)}
+              onEdit={() => onEditLead(lead)}
+            />
+          ))
         )}
       </div>
     </div>
