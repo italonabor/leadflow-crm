@@ -13,6 +13,10 @@ import { listConversations } from "@/lib/whatsapp-inbox.functions";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   component: InboxPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    phone: typeof search.phone === "string" ? search.phone : undefined,
+    leadId: typeof search.leadId === "string" ? search.leadId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Inbox WhatsApp · Prospecta CRM" },
