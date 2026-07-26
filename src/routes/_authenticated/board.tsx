@@ -15,6 +15,8 @@ import { renderTemplate } from "@/lib/whatsapp";
 import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
 import { InviteBanner } from "@/components/team/InviteBanner";
 import { AppShell } from "@/components/layout/AppShell";
+import { useNiches, useActiveNiche } from "@/lib/niches";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +36,10 @@ function BoardPage() {
 
   const workspaceQ = useActiveWorkspace(user.id);
   const workspaceId = workspaceQ.data?.id;
+  const nichesQ = useNiches();
+  const { activeNicheId } = useActiveNiche();
+  const activeNiche = (nichesQ.data ?? []).find((n) => n.id === activeNicheId) ?? null;
+
 
   const [leadDialog, setLeadDialog] = useState<{ open: boolean; lead?: Lead; stageId?: string }>({ open: false });
   const [stageDialog, setStageDialog] = useState<{ open: boolean; stage?: Stage }>({ open: false });
@@ -106,15 +112,21 @@ function BoardPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ["leads", user.id] }),
   });
 
+  const visibleLeads = useMemo(
+    () => (leadsQ.data ?? []).filter((l) => !activeNicheId || l.niche_id === activeNicheId),
+    [leadsQ.data, activeNicheId],
+  );
+
   const leadsByStage = useMemo(() => {
     const map = new Map<string, Lead[]>();
-    (leadsQ.data ?? []).forEach((l) => {
+    visibleLeads.forEach((l) => {
       const arr = map.get(l.stage_id) ?? [];
       arr.push(l);
       map.set(l.stage_id, arr);
     });
     return map;
-  }, [leadsQ.data]);
+  }, [visibleLeads]);
+
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
