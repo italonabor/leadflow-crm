@@ -6,6 +6,25 @@ import { normalizePhone } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+/** Garante que o link tenha protocolo (senão o navegador trata como caminho relativo e bloqueia). */
+export function normalizeUrl(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "";
+  if (/^https?:\/\//i.test(t)) return t;
+  if (/^(mailto:|tel:)/i.test(t)) return t;
+  return "https://" + t.replace(/^\/+/, "");
+}
+
+function openExternal(raw: string) {
+  const url = normalizeUrl(raw);
+  if (!url) return;
+  const w = window.open(url, "_blank", "noopener,noreferrer");
+  if (!w) {
+    navigator.clipboard?.writeText(url);
+    toast.info("O preview bloqueou a abertura. Link copiado — cole em uma nova aba.");
+  }
+}
+
 async function copyToClipboard(text: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -100,12 +119,17 @@ export function LeadCard({ lead, onEdit, stage, hasUnread }: { lead: Lead; onEdi
           )}
           {lead.link && (
             <a
-              href={lead.link}
+              href={normalizeUrl(lead.link)}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="flex min-w-0 items-center gap-1 truncate text-primary hover:underline"
+              title={normalizeUrl(lead.link)}
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                openExternal(lead.link!);
+              }}
             >
               <LinkIcon className="h-2.5 w-2.5 shrink-0" /><span className="truncate">{lead.link}</span>
             </a>
