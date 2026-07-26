@@ -63,12 +63,38 @@ function BoardPage() {
     },
   });
 
+  const unreadQ = useQuery({
+    queryKey: ["lead-unread", user.id],
+    refetchInterval: 20000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_conversations")
+        .select("lead_id, unread_count")
+        .gt("unread_count", 0)
+        .not("lead_id", "is", null);
+      if (error) throw error;
+      return new Set((data ?? []).map((c: { lead_id: string }) => c.lead_id));
+    },
+  });
+  const unreadLeadIds = unreadQ.data ?? new Set<string>();
+
   const moveLead = useMutation({
     mutationFn: async ({ id, stage_id }: { id: string; stage_id: string }) => {
       const { error } = await supabase.from("leads").update({ stage_id, position: Date.now() }).eq("id", id);
       if (error) throw error;
       const lead = (leadsQ.data ?? []).find((l) => l.id === id);
       const stage = (stagesQ.data ?? []).find((s) => s.id === stage_id);
+
+      if (stage?.auto_send_whatsapp && lead?.telefone) {
+        try {
+          const r = await sendStageAutoMessage({ data: { leadId: id, stageId: stage_id } });
+          if (r.ok && "sent" in r) toast.success(`Mensagem automática enviada (${stage.name})`);
+          else if (!r.ok) toast.error("Envio automático falhou: " + r.error);
+        } catch (err) {
+          toast.error("Envio automático falhou: " + (err instanceof Error ? err.message : "erro"));
+        }
+      }
+
       if (stage?.trigger_webhook && stage.webhook_url && lead) {
         const message = renderTemplate(stage.message_template, lead);
         try {
