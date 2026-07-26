@@ -481,3 +481,112 @@ export const fetchWhatsAppMedia = createServerFn({ method: "POST" })
       filename: meta?.file_name ?? null,
     };
   });
+
+/** Envio automático ao mover um lead para uma etapa com automação ativa. */
+export const sendStageAutoMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ leadId: z.string().uuid(), stageId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: any; userId: string };
+    const token = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+    const { data: stage } = await supabase
+      .from("stages")
+      .select("id, name, message_template, auto_send_whatsapp, wa_template_name, wa_template_language")
+      .eq("id", data.stageId)
+      .maybeSingle();
+    if (!stage?.auto_send_whatsapp) return { ok: true as const, skipped: "disabled" };
+
+    const { data: lead } = await supabase
+      .from("leads")
+      .select("id, workspace_id, nome, profissao, telefone, rede_social, link")
+      .eq("id", data.leadId)
+      .maybeSingle();
+    if (!lead?.telefone) return { ok: true as const, skipped: "sem telefone" };
+    if (!token || !phoneId) return { ok: false as const, error: "WhatsApp não configurado" };
+
+    const raw = String(lead.telefone).replace(/\D/g, "");
+    const to = raw.length <= 11 ? "55" + raw : raw;
+
+    const body = String(stage.message_template ?? "")
+      .replace(/\{nome\}/gi, lead.nome ?? "")
+      .replace(/\{profissao\}/gi, lead.profissao ?? "")
+      .replace(/\{telefone\}/gi, lead.telefone ?? "")
+      .replace(/\{rede_social\}/gi, lead.rede_social ?? "")
+      .replace(/\{link\}/gi, lead.link ?? "");
+
+    const workspaceId = lead.workspace_id;
+    const { data: cid } = await supabase.rpc("upsert_wa_conversation", {
+      _workspace_id: workspaceId,
+      _phone: to,
+      _lead_id: lead.id,
+    });
+    const conversationId = cid ?? null;
+
+    let lastInbound: string | null = null;
+    if (conversationId) {
+      const { data: conv } = await supabase
+        .from("whatsapp_conversations")
+        .select("last_inbound_at")
+        .eq("id", conversationId)
+        .maybeSingle();
+      lastInbound = conv?.last_inbound_at ?? null;
+    }
+    const windowOpen =
+      !!lastInbound && Date.now() - new Date(lastInbound).getTime() < 24 * 60 * 60 * 1000;
+
+    const useTemplate = !windowOpen || !body.trim();
+    if (useTemplate && !stage.wa_template_name) {
+      return { ok: false as const, error: "Fora da janela de 24h: configure um template aprovado na etapa." };
+    }
+
+    const payload = useTemplate
+      ? {
+          messaging_product: "whatsapp",
+          to,
+          type: "template",
+          template: {
+            name: stage.wa_template_name,
+            language: { code: stage.wa_template_language || "pt_BR" },
+          },
+        }
+      : { messaging_product: "whatsapp", to, type: "text", text: { preview_url: true, body } };
+
+    const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
+
+    const preview = useTemplate ? `[template] ${stage.wa_template_name}` : body;
+    if (conversationId) {
+      await supabase.from("whatsapp_messages").insert({
+        workspace_id: workspaceId,
+        conversation_id: conversationId,
+        lead_id: lead.id,
+        direction: "outbound",
+        wa_message_id: json?.messages?.[0]?.id ?? null,
+        to_phone: to,
+        body: preview,
+        message_type: useTemplate ? "template" : "text",
+        template_name: useTemplate ? stage.wa_template_name : null,
+        status: "sent",
+        sent_by: userId,
+        raw: json,
+      });
+      await supabase
+        .from("whatsapp_conversations")
+        .update({
+          last_message_at: new Date().toISOString(),
+          last_message_preview: preview.slice(0, 200),
+        })
+        .eq("id", conversationId);
+    }
+
+    return { ok: true as const, sent: useTemplate ? "template" : "text", stage: stage.name };
+  });

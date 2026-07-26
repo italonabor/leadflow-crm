@@ -15,7 +15,7 @@ async function copyToClipboard(text: string) {
   }
 }
 
-export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => void; stage?: Stage }) {
+export function LeadCard({ lead, onEdit, stage, hasUnread }: { lead: Lead; onEdit: () => void; stage?: Stage; hasUnread?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { type: "lead", lead },
@@ -33,12 +33,21 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
       {...attributes}
       className={cn(
         "group cursor-grab touch-none rounded-md border border-border/70 bg-card px-2 py-1 shadow-card transition hover:border-primary/40 active:cursor-grabbing",
+        hasUnread && "border-destructive/70 bg-destructive/10 hover:border-destructive",
         isDragging && "opacity-40",
       )}
     >
       <div className="min-w-0">
         <div className="flex items-center justify-between gap-1.5">
-          <h4 className="truncate text-[12px] font-semibold leading-tight">{lead.nome}</h4>
+          <h4 className="flex min-w-0 items-center gap-1.5 truncate text-[12px] font-semibold leading-tight">
+            {hasUnread && (
+              <span
+                className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-destructive"
+                title="Nova mensagem recebida"
+              />
+            )}
+            <span className="truncate">{lead.nome}</span>
+          </h4>
           <div
             className="flex shrink-0 items-center gap-0.5"
             onPointerDown={(e) => e.stopPropagation()}
@@ -114,12 +123,14 @@ export function Column({
   onAddLead,
   onEditStage,
   onEditLead,
+  unreadLeadIds,
 }: {
   stage: Stage;
   leads: Lead[];
   onAddLead: () => void;
   onEditStage: () => void;
   onEditLead: (lead: Lead) => void;
+  unreadLeadIds?: Set<string>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
@@ -153,7 +164,15 @@ export function Column({
           </div>
 
         ) : (
-          leads.map((lead) => <LeadCard key={lead.id} lead={lead} stage={stage} onEdit={() => onEditLead(lead)} />)
+          leads.map((lead) => (
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              stage={stage}
+              hasUnread={unreadLeadIds?.has(lead.id)}
+              onEdit={() => onEditLead(lead)}
+            />
+          ))
         )}
       </div>
     </div>

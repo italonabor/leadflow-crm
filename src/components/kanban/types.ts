@@ -8,6 +8,9 @@ export type Stage = {
   webhook_url: string | null;
   message_template: string | null;
   trigger_webhook: boolean;
+  auto_send_whatsapp?: boolean;
+  wa_template_name?: string | null;
+  wa_template_language?: string | null;
 };
 
 export type Lead = {
