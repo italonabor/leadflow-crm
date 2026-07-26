@@ -1,7 +1,8 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { Link } from "@tanstack/react-router";
 import { Phone, Link as LinkIcon, AtSign, Briefcase, Pencil, MessageCircle, Copy } from "lucide-react";
 import type { Lead, Stage } from "./types";
-import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
+import { normalizePhone } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -43,16 +44,16 @@ export function LeadCard({ lead, onEdit, stage }: { lead: Lead; onEdit: () => vo
             onPointerDown={(e) => e.stopPropagation()}
           >
             {lead.telefone && (
-              <a
-                href={buildWhatsAppLink(lead.telefone, renderTemplate(stage?.message_template, lead))}
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                to="/inbox"
+                search={{ phone: normalizePhone(lead.telefone), leadId: lead.id }}
                 onClick={(e) => e.stopPropagation()}
                 className="rounded p-0.5 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
-                aria-label="Abrir WhatsApp"
+                aria-label="Abrir conversa no Inbox WhatsApp"
+                title="Abrir no Inbox WhatsApp"
               >
                 <MessageCircle className="h-3 w-3" />
-              </a>
+              </Link>
             )}
             <button
               onClick={onEdit}
