@@ -34,6 +34,9 @@ export function StageDialog({
   const [messageTemplate, setMessageTemplate] = useState(stage?.message_template ?? "");
   const [webhookUrl, setWebhookUrl] = useState(stage?.webhook_url ?? "");
   const [triggerWebhook, setTriggerWebhook] = useState(stage?.trigger_webhook ?? false);
+  const [autoSend, setAutoSend] = useState(stage?.auto_send_whatsapp ?? false);
+  const [waTemplateName, setWaTemplateName] = useState(stage?.wa_template_name ?? "");
+  const [waTemplateLang, setWaTemplateLang] = useState(stage?.wa_template_language ?? "pt_BR");
 
   const save = useMutation({
     mutationFn: async () => {
@@ -44,6 +47,9 @@ export function StageDialog({
         message_template: messageTemplate.trim() || null,
         webhook_url: webhookUrl.trim() || null,
         trigger_webhook: triggerWebhook && !!webhookUrl.trim(),
+        auto_send_whatsapp: autoSend,
+        wa_template_name: waTemplateName.trim() || null,
+        wa_template_language: waTemplateLang.trim() || "pt_BR",
       };
       if (stage) {
         const { error } = await supabase.from("stages").update(payload).eq("id", stage.id);
@@ -118,6 +124,33 @@ export function StageDialog({
                   <code>{"{rede_social}"}</code>, <code>{"{link}"}</code>
                 </p>
               </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border border-border/60 p-2">
+                <div className="min-w-0">
+                  <Label className="text-sm">Enviar WhatsApp automaticamente ao mover para esta etapa</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Dentro da janela de 24h envia a mensagem-modelo acima; fora dela usa o template aprovado.
+                  </p>
+                </div>
+                <Switch checked={autoSend} onCheckedChange={setAutoSend} />
+              </div>
+
+              {autoSend && (
+                <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+                  <div className="grid gap-2">
+                    <Label>Template aprovado (fora das 24h)</Label>
+                    <Input
+                      value={waTemplateName}
+                      onChange={(e) => setWaTemplateName(e.target.value)}
+                      placeholder="ex: hello_world"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Idioma</Label>
+                    <Input value={waTemplateLang} onChange={(e) => setWaTemplateLang(e.target.value)} placeholder="pt_BR" />
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-2">
                 <Label>Webhook n8n (opcional)</Label>
                 <Input
