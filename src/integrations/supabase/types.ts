@@ -151,6 +151,7 @@ export type Database = {
       }
       stages: {
         Row: {
+          auto_send_whatsapp: boolean
           color: string
           created_at: string
           id: string
@@ -159,10 +160,13 @@ export type Database = {
           position: number
           trigger_webhook: boolean
           user_id: string
+          wa_template_language: string
+          wa_template_name: string | null
           webhook_url: string | null
           workspace_id: string
         }
         Insert: {
+          auto_send_whatsapp?: boolean
           color?: string
           created_at?: string
           id?: string
@@ -171,10 +175,13 @@ export type Database = {
           position?: number
           trigger_webhook?: boolean
           user_id: string
+          wa_template_language?: string
+          wa_template_name?: string | null
           webhook_url?: string | null
           workspace_id: string
         }
         Update: {
+          auto_send_whatsapp?: boolean
           color?: string
           created_at?: string
           id?: string
@@ -183,6 +190,8 @@ export type Database = {
           position?: number
           trigger_webhook?: boolean
           user_id?: string
+          wa_template_language?: string
+          wa_template_name?: string | null
           webhook_url?: string | null
           workspace_id?: string
         }
