@@ -123,12 +123,14 @@ export function Column({
   onAddLead,
   onEditStage,
   onEditLead,
+  unreadLeadIds,
 }: {
   stage: Stage;
   leads: Lead[];
   onAddLead: () => void;
   onEditStage: () => void;
   onEditLead: (lead: Lead) => void;
+  unreadLeadIds?: Set<string>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
