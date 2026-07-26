@@ -172,7 +172,9 @@ function BoardPage() {
         rede_social: r.rede_social,
         link: r.link,
         notes: r.notes,
+        niche_id: activeNicheId,
         position: Date.now() + i,
+
       }));
       const { error } = await supabase.from("leads").insert(payload);
       if (error) throw error;
@@ -203,7 +205,7 @@ function BoardPage() {
   }
 
   const stages = stagesQ.data ?? [];
-  const leads = leadsQ.data ?? [];
+  const leads = visibleLeads;
   const nextStagePos = stages.length ? Math.max(...stages.map((s) => s.position)) + 1 : 0;
 
   const totalLeads = leads.length;
@@ -211,6 +213,7 @@ function BoardPage() {
   const encerramentoStage = stages.find((s) => /encerr/i.test(s.name));
   const encerrados = encerramentoStage ? (leadsByStage.get(encerramentoStage.id)?.length ?? 0) : 0;
   const conversao = totalLeads > 0 ? Math.round((encerrados / totalLeads) * 100) : 0;
+
 
   const toolbar = (
     <>
