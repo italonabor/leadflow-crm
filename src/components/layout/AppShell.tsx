@@ -23,6 +23,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NicheNav } from "@/components/layout/NicheNav";
+
 
 type NavItem = {
   to: "/board" | "/team" | "/inbox" | "/whatsapp" | "/prospect" | "/chat" | "/integrations";
@@ -109,26 +111,37 @@ export function AppShell({
           </div>
         )}
 
-        <nav className="flex-1 space-y-0.5 px-2">
-          {NAV.map((item) => {
-            const active = pathname === item.to || pathname.startsWith(item.to + "/");
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition ${
-                  active
-                    ? "bg-primary/15 text-primary shadow-[inset_2px_0_0_0_var(--primary)]"
-                    : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
-                }`}
-              >
-                <span className={active ? "text-primary" : ""}>{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex-1 overflow-y-auto">
+          <nav className="space-y-0.5 px-2">
+            {NAV.map((item) => {
+              const active = pathname === item.to || pathname.startsWith(item.to + "/");
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition ${
+                    active
+                      ? "bg-primary/15 text-primary shadow-[inset_2px_0_0_0_var(--primary)]"
+                      : "text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                  }`}
+                >
+                  <span className={active ? "text-primary" : ""}>{item.icon}</span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {ws && (
+            <NicheNav
+              userId={user.id}
+              workspaceId={ws.id}
+              onNavigate={() => setMobileOpen(false)}
+            />
+          )}
+        </div>
+
 
         <div className="border-t border-border/60 p-3">
           <DropdownMenu>

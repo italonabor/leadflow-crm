@@ -15,6 +15,8 @@ import { renderTemplate } from "@/lib/whatsapp";
 import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
 import { InviteBanner } from "@/components/team/InviteBanner";
 import { AppShell } from "@/components/layout/AppShell";
+import { useNiches, useActiveNiche } from "@/lib/niches";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +36,10 @@ function BoardPage() {
 
   const workspaceQ = useActiveWorkspace(user.id);
   const workspaceId = workspaceQ.data?.id;
+  const nichesQ = useNiches();
+  const { activeNicheId } = useActiveNiche();
+  const activeNiche = (nichesQ.data ?? []).find((n) => n.id === activeNicheId) ?? null;
+
 
   const [leadDialog, setLeadDialog] = useState<{ open: boolean; lead?: Lead; stageId?: string }>({ open: false });
   const [stageDialog, setStageDialog] = useState<{ open: boolean; stage?: Stage }>({ open: false });
@@ -106,15 +112,21 @@ function BoardPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ["leads", user.id] }),
   });
 
+  const visibleLeads = useMemo(
+    () => (leadsQ.data ?? []).filter((l) => !activeNicheId || l.niche_id === activeNicheId),
+    [leadsQ.data, activeNicheId],
+  );
+
   const leadsByStage = useMemo(() => {
     const map = new Map<string, Lead[]>();
-    (leadsQ.data ?? []).forEach((l) => {
+    visibleLeads.forEach((l) => {
       const arr = map.get(l.stage_id) ?? [];
       arr.push(l);
       map.set(l.stage_id, arr);
     });
     return map;
-  }, [leadsQ.data]);
+  }, [visibleLeads]);
+
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -160,7 +172,9 @@ function BoardPage() {
         rede_social: r.rede_social,
         link: r.link,
         notes: r.notes,
+        niche_id: activeNicheId,
         position: Date.now() + i,
+
       }));
       const { error } = await supabase.from("leads").insert(payload);
       if (error) throw error;
@@ -191,7 +205,7 @@ function BoardPage() {
   }
 
   const stages = stagesQ.data ?? [];
-  const leads = leadsQ.data ?? [];
+  const leads = visibleLeads;
   const nextStagePos = stages.length ? Math.max(...stages.map((s) => s.position)) + 1 : 0;
 
   const totalLeads = leads.length;
@@ -199,6 +213,7 @@ function BoardPage() {
   const encerramentoStage = stages.find((s) => /encerr/i.test(s.name));
   const encerrados = encerramentoStage ? (leadsByStage.get(encerramentoStage.id)?.length ?? 0) : 0;
   const conversao = totalLeads > 0 ? Math.round((encerrados / totalLeads) * 100) : 0;
+
 
   const toolbar = (
     <>
@@ -237,17 +252,29 @@ function BoardPage() {
   );
 
   return (
-    <AppShell user={user} title="Pipeline de leads" toolbar={toolbar} scrollable={false}>
+    <AppShell
+      user={user}
+      title={activeNiche ? `Pipeline · ${activeNiche.name}` : "Pipeline de leads"}
+      toolbar={toolbar}
+      scrollable={false}
+    >
       <div className="flex h-full flex-col">
         <InviteBanner userId={user.id} />
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-3 border-b border-border/60 bg-surface/30 px-4 py-3 sm:grid-cols-4 sm:px-6">
-          <Kpi label="Leads" value={totalLeads.toString()} icon={<UsersIcon className="h-4 w-4" />} />
-          <Kpi label="Etapas" value={totalStages.toString()} icon={<TrendingUp className="h-4 w-4" />} />
+        {/* KPIs compactos */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/60 bg-surface/30 px-4 py-1.5 text-[11px] text-muted-foreground sm:px-6">
+          {activeNiche && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2 py-0.5 font-medium text-foreground">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: activeNiche.color }} />
+              {activeNiche.name}
+            </span>
+          )}
+          <Kpi label="Leads" value={totalLeads.toString()} icon={<UsersIcon className="h-3 w-3" />} />
+          <Kpi label="Etapas" value={totalStages.toString()} icon={<TrendingUp className="h-3 w-3" />} />
           <Kpi label="Encerrados" value={encerrados.toString()} accent />
           <Kpi label="Conversão" value={`${conversao}%`} accent />
         </div>
+
 
         <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6">
           {stagesQ.isLoading || leadsQ.isLoading ? (
@@ -289,12 +316,15 @@ function BoardPage() {
           userId={user.id}
           workspaceId={workspaceId}
           stages={stages}
+          niches={nichesQ.data ?? []}
+          defaultNicheId={activeNicheId}
           lead={leadDialog.lead}
           defaultStageId={leadDialog.stageId}
           open={leadDialog.open}
           onOpenChange={(o) => setLeadDialog({ open: o })}
         />
       )}
+
       {stageDialog.open && workspaceId && (
         <StageDialog
           key={stageDialog.stage?.id ?? "new-stage"}
@@ -312,16 +342,11 @@ function BoardPage() {
 
 function Kpi({ label, value, icon, accent }: { label: string; value: string; icon?: React.ReactNode; accent?: boolean }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/60 px-3 py-2">
-      {icon && (
-        <div className={`grid h-8 w-8 place-items-center rounded-md ${accent ? "bg-primary/15 text-primary" : "bg-surface-2 text-muted-foreground"}`}>
-          {icon}
-        </div>
-      )}
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-        <div className={`font-display text-lg font-bold leading-tight ${accent ? "text-primary" : ""}`}>{value}</div>
-      </div>
-    </div>
+    <span className="inline-flex items-center gap-1.5">
+      {icon && <span className={accent ? "text-primary" : "text-muted-foreground"}>{icon}</span>}
+      <span className="uppercase tracking-widest">{label}</span>
+      <span className={`font-semibold ${accent ? "text-primary" : "text-foreground"}`}>{value}</span>
+    </span>
   );
+
 }

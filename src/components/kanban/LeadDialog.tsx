@@ -14,18 +14,21 @@ import { buildWhatsAppLink, renderTemplate } from "@/lib/whatsapp";
 import { sendWhatsAppCloudMessage } from "@/lib/whatsapp-cloud.functions";
 import { ConversationPanel } from "@/components/whatsapp/ConversationPanel";
 import type { Lead, Stage } from "./types";
+import type { Niche } from "@/lib/niches";
 
 type Props = {
   userId: string;
   workspaceId: string;
   stages: Stage[];
+  niches?: Niche[];
+  defaultNicheId?: string | null;
   lead?: Lead;
   defaultStageId?: string;
   open: boolean;
   onOpenChange: (o: boolean) => void;
 };
 
-export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, open, onOpenChange }: Props) {
+export function LeadDialog({ userId, workspaceId, stages, niches = [], defaultNicheId, lead, defaultStageId, open, onOpenChange }: Props) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     nome: lead?.nome ?? "",
@@ -35,6 +38,7 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
     link: lead?.link ?? "",
     notes: lead?.notes ?? "",
     stage_id: lead?.stage_id ?? defaultStageId ?? stages[0]?.id ?? "",
+    niche_id: lead?.niche_id ?? defaultNicheId ?? "",
   });
 
   const save = useMutation({
@@ -51,6 +55,7 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
             link: form.link || null,
             notes: form.notes || null,
             stage_id: form.stage_id,
+            niche_id: form.niche_id || null,
           })
           .eq("id", lead.id);
         if (error) throw error;
@@ -66,6 +71,7 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
           link: form.link || null,
           notes: form.notes || null,
           stage_id: form.stage_id,
+          niche_id: form.niche_id || null,
           position: Date.now(),
         });
         if (error) throw error;
@@ -131,6 +137,19 @@ export function LeadDialog({ userId, workspaceId, stages, lead, defaultStageId, 
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label>Nicho</Label>
+            <Select
+              value={form.niche_id || "none"}
+              onValueChange={(v) => setForm({ ...form, niche_id: v === "none" ? "" : v })}
+            >
+              <SelectTrigger><SelectValue placeholder="Sem nicho" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem nicho</SelectItem>
+                {niches.map((n) => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

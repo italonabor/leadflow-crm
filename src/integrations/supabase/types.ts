@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           id: string
           link: string | null
+          niche_id: string | null
           nome: string
           notes: string | null
           position: number
@@ -36,6 +37,7 @@ export type Database = {
           created_at?: string
           id?: string
           link?: string | null
+          niche_id?: string | null
           nome: string
           notes?: string | null
           position?: number
@@ -52,6 +54,7 @@ export type Database = {
           created_at?: string
           id?: string
           link?: string | null
+          niche_id?: string | null
           nome?: string
           notes?: string | null
           position?: number
@@ -65,6 +68,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "leads_niche_id_fkey"
+            columns: ["niche_id"]
+            isOneToOne: false
+            referencedRelation: "niches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leads_stage_id_fkey"
             columns: ["stage_id"]
             isOneToOne: false
@@ -73,6 +83,47 @@ export type Database = {
           },
           {
             foreignKeyName: "leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      niches: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "niches_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
