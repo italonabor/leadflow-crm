@@ -252,17 +252,29 @@ function BoardPage() {
   );
 
   return (
-    <AppShell user={user} title="Pipeline de leads" toolbar={toolbar} scrollable={false}>
+    <AppShell
+      user={user}
+      title={activeNiche ? `Pipeline · ${activeNiche.name}` : "Pipeline de leads"}
+      toolbar={toolbar}
+      scrollable={false}
+    >
       <div className="flex h-full flex-col">
         <InviteBanner userId={user.id} />
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 gap-3 border-b border-border/60 bg-surface/30 px-4 py-3 sm:grid-cols-4 sm:px-6">
-          <Kpi label="Leads" value={totalLeads.toString()} icon={<UsersIcon className="h-4 w-4" />} />
-          <Kpi label="Etapas" value={totalStages.toString()} icon={<TrendingUp className="h-4 w-4" />} />
+        {/* KPIs compactos */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/60 bg-surface/30 px-4 py-1.5 text-[11px] text-muted-foreground sm:px-6">
+          {activeNiche && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2 py-0.5 font-medium text-foreground">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: activeNiche.color }} />
+              {activeNiche.name}
+            </span>
+          )}
+          <Kpi label="Leads" value={totalLeads.toString()} icon={<UsersIcon className="h-3 w-3" />} />
+          <Kpi label="Etapas" value={totalStages.toString()} icon={<TrendingUp className="h-3 w-3" />} />
           <Kpi label="Encerrados" value={encerrados.toString()} accent />
           <Kpi label="Conversão" value={`${conversao}%`} accent />
         </div>
+
 
         <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6">
           {stagesQ.isLoading || leadsQ.isLoading ? (
