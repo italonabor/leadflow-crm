@@ -16,6 +16,7 @@ import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
 import { InviteBanner } from "@/components/team/InviteBanner";
 import { AppShell } from "@/components/layout/AppShell";
 import { useNiches, useActiveNiche } from "@/lib/niches";
+import { sendStageAutoMessage } from "@/lib/whatsapp-inbox.functions";
 
 import {
   DropdownMenu,
@@ -318,6 +319,7 @@ function BoardPage() {
                     onAddLead={() => setLeadDialog({ open: true, stageId: stage.id })}
                     onEditStage={() => setStageDialog({ open: true, stage })}
                     onEditLead={(lead) => setLeadDialog({ open: true, lead })}
+                    unreadLeadIds={unreadLeadIds}
                   />
                 ))}
                 <button
