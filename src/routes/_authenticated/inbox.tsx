@@ -13,6 +13,10 @@ import { listConversations } from "@/lib/whatsapp-inbox.functions";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   component: InboxPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    phone: typeof search.phone === "string" ? search.phone : undefined,
+    leadId: typeof search.leadId === "string" ? search.leadId : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Inbox WhatsApp · Prospecta CRM" },
@@ -38,6 +42,7 @@ type Conv = {
 
 function InboxPage() {
   const { user } = Route.useRouteContext();
+  const { phone: phoneParam, leadId: leadIdParam } = Route.useSearch();
   const qc = useQueryClient();
   const list = useServerFn(listConversations);
   const [selected, setSelected] = useState<Conv | null>(null);
@@ -52,6 +57,33 @@ function InboxPage() {
     },
     refetchInterval: 10_000,
   });
+
+  // Abre direto a conversa do lead quando vem do board (?phone=&leadId=)
+  useEffect(() => {
+    if (!phoneParam && !leadIdParam) return;
+    if (selected) return;
+    const digits = (phoneParam ?? "").replace(/\D/g, "");
+    const tail = digits.slice(-8);
+    const convs = q.data ?? [];
+    const found =
+      (leadIdParam ? convs.find((c) => c.lead_id === leadIdParam) : undefined) ??
+      (tail ? convs.find((c) => c.phone.replace(/\D/g, "").endsWith(tail)) : undefined);
+    if (found) {
+      setSelected(found);
+    } else if (digits) {
+      setSelected({
+        id: "",
+        phone: digits,
+        lead_id: leadIdParam ?? null,
+        last_inbound_at: null,
+        last_message_at: null,
+        last_message_preview: null,
+        unread_count: 0,
+        leads: null,
+      });
+    }
+  }, [phoneParam, leadIdParam, q.data, selected]);
+
 
   // Realtime invalidation quando qualquer conversa muda
   useEffect(() => {
@@ -158,9 +190,14 @@ function InboxPage() {
           <section className="min-h-0">
             {selected ? (
               <ConversationPanel
-                conversationId={selected.id}
+                key={selected.id || selected.phone}
+                conversationId={selected.id || null}
                 leadId={selected.lead_id}
                 phone={selected.phone}
+                onConversationCreated={(id) => {
+                  setSelected((s) => (s ? { ...s, id } : s));
+                  qc.invalidateQueries({ queryKey: ["wa-conversations"] });
+                }}
               />
             ) : (
               <div className="grid h-full place-items-center rounded-xl border border-dashed border-border/60 bg-card/40 text-sm text-muted-foreground">
