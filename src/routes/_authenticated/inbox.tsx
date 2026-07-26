@@ -190,9 +190,14 @@ function InboxPage() {
           <section className="min-h-0">
             {selected ? (
               <ConversationPanel
-                conversationId={selected.id}
+                key={selected.id || selected.phone}
+                conversationId={selected.id || null}
                 leadId={selected.lead_id}
                 phone={selected.phone}
+                onConversationCreated={(id) => {
+                  setSelected((s) => (s ? { ...s, id } : s));
+                  qc.invalidateQueries({ queryKey: ["wa-conversations"] });
+                }}
               />
             ) : (
               <div className="grid h-full place-items-center rounded-xl border border-dashed border-border/60 bg-card/40 text-sm text-muted-foreground">
