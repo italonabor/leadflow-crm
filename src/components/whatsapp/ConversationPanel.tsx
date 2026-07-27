@@ -64,12 +64,14 @@ type Msg = {
 export function ConversationPanel({
   conversationId,
   leadId,
+  leadName,
   phone,
   compact = false,
   onConversationCreated,
 }: {
   conversationId?: string | null;
   leadId?: string | null;
+  leadName?: string | null;
   phone?: string | null;
   compact?: boolean;
   onConversationCreated?: (id: string) => void;
