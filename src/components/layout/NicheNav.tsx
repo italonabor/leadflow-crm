@@ -57,10 +57,16 @@ export function NicheNav({
         >
           <span className="h-2 w-2 shrink-0 rounded-full bg-muted-foreground/50" />
           <span className="truncate">Todos os nichos</span>
+          {totalUnread > 0 && (
+            <span className="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold leading-none text-destructive-foreground">
+              {totalUnread}
+            </span>
+          )}
         </button>
 
         {niches.map((n) => {
           const active = activeNicheId === n.id;
+          const count = unread[n.id] ?? 0;
           return (
             <div
               key={n.id}
@@ -76,6 +82,11 @@ export function NicheNav({
               >
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: n.color }} />
                 <span className="truncate">{n.name}</span>
+                {count > 0 && (
+                  <span className="ml-auto shrink-0 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold leading-none text-destructive-foreground">
+                    {count}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setDialog({ open: true, niche: n })}
