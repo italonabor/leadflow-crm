@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Pencil } from "lucide-react";
-import { useNiches, useActiveNiche, type Niche } from "@/lib/niches";
+import { useNiches, useActiveNiche, useNicheUnreadCounts, type Niche } from "@/lib/niches";
 import { NicheDialog } from "@/components/kanban/NicheDialog";
 
 export function NicheNav({
