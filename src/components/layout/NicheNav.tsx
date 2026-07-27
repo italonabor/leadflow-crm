@@ -15,6 +15,9 @@ export function NicheNav({
 }) {
   const navigate = useNavigate();
   const nichesQ = useNiches();
+  const unreadQ = useNicheUnreadCounts();
+  const unread = unreadQ.data ?? {};
+  const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
   const { activeNicheId, setActiveNiche } = useActiveNiche();
   const [dialog, setDialog] = useState<{ open: boolean; niche?: Niche }>({ open: false });
 
