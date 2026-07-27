@@ -83,16 +83,16 @@ export function LeadCard({ lead, onEdit, stage, hasUnread, onOpenChat }: { lead:
             </button>
 
             {lead.telefone && (
-              <Link
-                to="/inbox"
-                search={{ phone: normalizePhone(lead.telefone), leadId: lead.id }}
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onOpenChat?.(lead); }}
                 className="rounded p-0.5 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
-                aria-label="Abrir conversa no Inbox WhatsApp"
-                title="Abrir no Inbox WhatsApp"
+                aria-label="Abrir conversa do WhatsApp ao lado"
+                title="Abrir conversa ao lado"
               >
                 <MessageCircle className="h-3 w-3" />
-              </Link>
+              </button>
             )}
             <button
               onClick={onEdit}
