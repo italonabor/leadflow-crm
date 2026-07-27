@@ -11,7 +11,10 @@ import type { Lead, Stage } from "@/components/kanban/types";
 import { downloadTemplate, exportLeadsToExcel, parseLeadsFile } from "@/lib/excel";
 import { toast } from "sonner";
 import { Download, Upload, Plus, FileDown, Loader2, Users as UsersIcon, TrendingUp, Search, X } from "lucide-react";
-import { renderTemplate } from "@/lib/whatsapp";
+import { renderTemplate, normalizePhone } from "@/lib/whatsapp";
+import { Link } from "@tanstack/react-router";
+import { ExternalLink } from "lucide-react";
+import { ConversationPanel } from "@/components/whatsapp/ConversationPanel";
 import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
 import { InviteBanner } from "@/components/team/InviteBanner";
 import { AppShell } from "@/components/layout/AppShell";
@@ -79,6 +82,7 @@ function BoardPage() {
     },
   });
   const unreadLeadIds = unreadQ.data ?? new Set<string>();
+  const [chatLead, setChatLead] = useState<Lead | null>(null);
 
   const moveLead = useMutation({
     mutationFn: async ({ id, stage_id }: { id: string; stage_id: string }) => {
@@ -336,6 +340,7 @@ function BoardPage() {
         </div>
 
 
+        <div className="flex min-h-0 flex-1">
         <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6">
           {stagesQ.isLoading || leadsQ.isLoading ? (
             <div className="grid h-full place-items-center">
@@ -353,6 +358,7 @@ function BoardPage() {
                     onEditStage={() => setStageDialog({ open: true, stage })}
                     onEditLead={(lead) => setLeadDialog({ open: true, lead })}
                     unreadLeadIds={unreadLeadIds}
+                    onOpenChat={(lead) => setChatLead(lead)}
                   />
                 ))}
                 <button
@@ -369,6 +375,46 @@ function BoardPage() {
             </DndContext>
           )}
         </div>
+
+        {chatLead && (
+          <aside className="hidden w-[380px] shrink-0 flex-col border-l border-border/60 bg-card/40 p-3 lg:flex">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{chatLead.nome}</p>
+                <p className="truncate font-mono text-[11px] text-muted-foreground">
+                  {chatLead.telefone}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/inbox"
+                  search={{ phone: normalizePhone(chatLead.telefone ?? ""), leadId: chatLead.id }}
+                  className="rounded-md p-1.5 text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+                  aria-label="Abrir no Inbox WhatsApp"
+                  title="Abrir no Inbox WhatsApp"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Link>
+                <button
+                  onClick={() => setChatLead(null)}
+                  className="rounded-md p-1.5 text-muted-foreground transition hover:bg-surface-2 hover:text-foreground"
+                  aria-label="Fechar conversa"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1">
+              <ConversationPanel
+                key={chatLead.id}
+                conversationId={null}
+                leadId={chatLead.id}
+                phone={normalizePhone(chatLead.telefone ?? "")}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
       </div>
 
       {leadDialog.open && workspaceId && (
