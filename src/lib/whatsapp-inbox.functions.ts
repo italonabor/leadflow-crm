@@ -186,6 +186,7 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
         templateName: z.string().min(1),
         language: z.string().default("pt_BR"),
         bodyParams: z.array(z.string()).default([]),
+        headerParams: z.array(z.string()).default([]),
         conversationId: z.string().uuid().optional(),
         leadId: z.string().uuid().optional(),
       })
@@ -198,9 +199,18 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
     if (!token || !phoneId) return { ok: false as const, error: "WhatsApp não configurado" };
 
     const to = normalizePhone(data.to);
-    const components = data.bodyParams.length
-      ? [{ type: "body", parameters: data.bodyParams.map((t) => ({ type: "text", text: t })) }]
-      : undefined;
+    const comps: any[] = [];
+    if (data.headerParams.length)
+      comps.push({
+        type: "header",
+        parameters: data.headerParams.map((t) => ({ type: "text", text: t })),
+      });
+    if (data.bodyParams.length)
+      comps.push({
+        type: "body",
+        parameters: data.bodyParams.map((t) => ({ type: "text", text: t })),
+      });
+    const components = comps.length ? comps : undefined;
 
     const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
       method: "POST",
@@ -217,7 +227,13 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
       }),
     });
     const json: any = await res.json().catch(() => ({}));
-    if (!res.ok) return { ok: false as const, error: json?.error?.message ?? `HTTP ${res.status}` };
+    if (!res.ok) {
+      let msg = json?.error?.message ?? `HTTP ${res.status}`;
+      if (String(json?.error?.code) === "132000")
+        msg =
+          "O número de variáveis enviadas não bate com o template aprovado na Meta. Preencha exatamente as variáveis exibidas na pré-visualização do template.";
+      return { ok: false as const, error: msg };
+    }
 
     // Persistir como outbound (mesma lógica de upsert)
     const { data: ws } = await supabase

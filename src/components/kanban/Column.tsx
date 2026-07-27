@@ -1,8 +1,6 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Link } from "@tanstack/react-router";
 import { Phone, Link as LinkIcon, AtSign, Briefcase, Pencil, MessageCircle, Copy, Zap } from "lucide-react";
 import type { Lead, Stage } from "./types";
-import { normalizePhone } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -34,7 +32,7 @@ async function copyToClipboard(text: string) {
   }
 }
 
-export function LeadCard({ lead, onEdit, stage, hasUnread }: { lead: Lead; onEdit: () => void; stage?: Stage; hasUnread?: boolean }) {
+export function LeadCard({ lead, onEdit, stage, hasUnread, onOpenChat }: { lead: Lead; onEdit: () => void; stage?: Stage; hasUnread?: boolean; onOpenChat?: (lead: Lead) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { type: "lead", lead },
@@ -83,16 +81,16 @@ export function LeadCard({ lead, onEdit, stage, hasUnread }: { lead: Lead; onEdi
             </button>
 
             {lead.telefone && (
-              <Link
-                to="/inbox"
-                search={{ phone: normalizePhone(lead.telefone), leadId: lead.id }}
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onOpenChat?.(lead); }}
                 className="rounded p-0.5 text-emerald-500 opacity-0 transition hover:bg-emerald-500/10 group-hover:opacity-100"
-                aria-label="Abrir conversa no Inbox WhatsApp"
-                title="Abrir no Inbox WhatsApp"
+                aria-label="Abrir conversa do WhatsApp ao lado"
+                title="Abrir conversa ao lado"
               >
                 <MessageCircle className="h-3 w-3" />
-              </Link>
+              </button>
             )}
             <button
               onClick={onEdit}
@@ -159,6 +157,7 @@ export function Column({
   onEditStage,
   onEditLead,
   unreadLeadIds,
+  onOpenChat,
 }: {
   stage: Stage;
   leads: Lead[];
@@ -166,6 +165,7 @@ export function Column({
   onEditStage: () => void;
   onEditLead: (lead: Lead) => void;
   unreadLeadIds?: Set<string>;
+  onOpenChat?: (lead: Lead) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
@@ -209,6 +209,7 @@ export function Column({
               lead={lead}
               stage={stage}
               hasUnread={unreadLeadIds?.has(lead.id)}
+              onOpenChat={onOpenChat}
               onEdit={() => onEditLead(lead)}
             />
           ))
