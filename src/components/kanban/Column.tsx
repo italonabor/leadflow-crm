@@ -1,6 +1,6 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Link } from "@tanstack/react-router";
-import { Phone, Link as LinkIcon, AtSign, Briefcase, Pencil, MessageCircle, Copy } from "lucide-react";
+import { Phone, Link as LinkIcon, AtSign, Briefcase, Pencil, MessageCircle, Copy, Zap } from "lucide-react";
 import type { Lead, Stage } from "./types";
 import { normalizePhone } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
@@ -71,6 +71,17 @@ export function LeadCard({ lead, onEdit, stage, hasUnread }: { lead: Lead; onEdi
             className="flex shrink-0 items-center gap-0.5"
             onPointerDown={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); copyToClipboard(lead.nome); }}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition hover:bg-surface-2 hover:text-foreground group-hover:opacity-100"
+              aria-label="Copiar nome do lead"
+              title="Copiar nome"
+            >
+              <Copy className="h-3 w-3" />
+            </button>
+
             {lead.telefone && (
               <Link
                 to="/inbox"
@@ -165,6 +176,10 @@ export function Column({
           <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: stage.color }} />
           <span className="truncate font-display text-sm font-semibold group-hover:text-primary">{stage.name}</span>
           <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{leads.length}</span>
+          {stage.auto_send_whatsapp && (
+            <Zap className="h-3 w-3 shrink-0 text-amber-400" aria-label="Mensagem automática ativa" />
+          )}
+
         </button>
         <button
           onClick={onAddLead}

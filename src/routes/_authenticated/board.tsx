@@ -10,7 +10,7 @@ import { StageDialog } from "@/components/kanban/StageDialog";
 import type { Lead, Stage } from "@/components/kanban/types";
 import { downloadTemplate, exportLeadsToExcel, parseLeadsFile } from "@/lib/excel";
 import { toast } from "sonner";
-import { Download, Upload, Plus, FileDown, Loader2, Users as UsersIcon, TrendingUp } from "lucide-react";
+import { Download, Upload, Plus, FileDown, Loader2, Users as UsersIcon, TrendingUp, Search, X } from "lucide-react";
 import { renderTemplate } from "@/lib/whatsapp";
 import { useActiveWorkspace } from "@/lib/useActiveWorkspace";
 import { InviteBanner } from "@/components/team/InviteBanner";
@@ -34,6 +34,7 @@ function BoardPage() {
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const workspaceQ = useActiveWorkspace(user.id);
   const workspaceId = workspaceQ.data?.id;
@@ -139,10 +140,17 @@ function BoardPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ["leads", user.id] }),
   });
 
-  const visibleLeads = useMemo(
-    () => (leadsQ.data ?? []).filter((l) => !activeNicheId || l.niche_id === activeNicheId),
-    [leadsQ.data, activeNicheId],
-  );
+  const visibleLeads = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (leadsQ.data ?? [])
+      .filter((l) => !activeNicheId || l.niche_id === activeNicheId)
+      .filter((l) =>
+        !q ||
+        [l.nome, l.profissao, l.telefone, l.rede_social, l.link, l.notes]
+          .some((v) => (v ?? "").toLowerCase().includes(q)),
+      );
+  }, [leadsQ.data, activeNicheId, search]);
+
 
   const leadsByStage = useMemo(() => {
     const map = new Map<string, Lead[]>();
@@ -255,6 +263,27 @@ function BoardPage() {
         className="hidden"
         onChange={(e) => e.target.files?.[0] && handleImport(e.target.files[0])}
       />
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar lead..."
+          aria-label="Buscar lead no pipeline"
+          className="h-8 w-36 rounded-md border border-border/60 bg-surface/60 pl-8 pr-7 text-xs outline-none transition placeholder:text-muted-foreground focus:border-primary/60 sm:w-52"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            aria-label="Limpar busca"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm">
