@@ -64,6 +64,28 @@ export function useNicheUnreadCounts() {
 }
 
 
+/** Marca como lidas todas as conversas dos leads de um nicho (null = todos). */
+export function useMarkNicheRead() {
+  const qc = useQueryClient();
+  return async (nicheId: string | null) => {
+    let leadIds: string[] = [];
+    const query = supabase.from("leads").select("id");
+    const { data: leads } = nicheId
+      ? await query.eq("niche_id", nicheId)
+      : await query;
+    leadIds = ((leads ?? []) as { id: string }[]).map((l) => l.id);
+    if (leadIds.length) {
+      await supabase
+        .from("whatsapp_conversations")
+        .update({ unread_count: 0 })
+        .gt("unread_count", 0)
+        .in("lead_id", leadIds);
+    }
+    qc.invalidateQueries({ queryKey: ["niche-unread"] });
+    qc.invalidateQueries({ queryKey: ["lead-unread"] });
+  };
+}
+
 /** null = "Todos os nichos" */
 export function useActiveNiche() {
   const qc = useQueryClient();

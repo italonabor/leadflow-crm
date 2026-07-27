@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Pencil } from "lucide-react";
-import { useNiches, useActiveNiche, useNicheUnreadCounts, type Niche } from "@/lib/niches";
+import { useNiches, useActiveNiche, useNicheUnreadCounts, useMarkNicheRead, type Niche } from "@/lib/niches";
 import { NicheDialog } from "@/components/kanban/NicheDialog";
 
 export function NicheNav({
@@ -19,6 +19,7 @@ export function NicheNav({
   const unread = unreadQ.data ?? {};
   const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
   const { activeNicheId, setActiveNiche } = useActiveNiche();
+  const markNicheRead = useMarkNicheRead();
   const [dialog, setDialog] = useState<{ open: boolean; niche?: Niche }>({ open: false });
 
   const niches = nichesQ.data ?? [];
@@ -26,6 +27,7 @@ export function NicheNav({
 
   function select(id: string | null) {
     setActiveNiche(id);
+    void markNicheRead(id);
     onNavigate?.();
     navigate({ to: "/board" });
   }
