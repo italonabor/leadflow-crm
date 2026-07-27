@@ -299,6 +299,7 @@ export function ConversationPanel({
             to={effectivePhone ?? ""}
             conversationId={effectiveConversationId ?? undefined}
             leadId={leadId ?? undefined}
+            leadName={leadName ?? undefined}
             onSent={() => {
               setTplOpen(false);
               qc.invalidateQueries({ queryKey: key });
