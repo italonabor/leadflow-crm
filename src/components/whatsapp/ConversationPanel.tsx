@@ -512,6 +512,7 @@ function TemplateDialog({
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("pt_BR");
   const [params, setParams] = useState<string[]>([]);
+  const [headerParams, setHeaderParams] = useState<string[]>([]);
   const [manualName, setManualName] = useState("");
 
   const q = useQuery({
@@ -522,12 +523,19 @@ function TemplateDialog({
   const templates: any[] = q.data?.ok ? q.data.templates : [];
   const selected = templates.find((t) => t.name === name);
   const bodyComp = selected?.components?.find((c: any) => c.type === "BODY");
-  const paramCount = bodyComp?.text ? (bodyComp.text.match(/\{\{\d+\}\}/g) ?? []).length : 0;
+  const headerComp = selected?.components?.find(
+    (c: any) => c.type === "HEADER" && (c.format ?? "TEXT") === "TEXT",
+  );
+  const countVars = (t?: string) =>
+    t ? new Set(t.match(/\{\{\d+\}\}/g) ?? []).size : 0;
+  const paramCount = countVars(bodyComp?.text);
+  const headerCount = countVars(headerComp?.text);
 
   useEffect(() => {
     setParams(Array(paramCount).fill(""));
+    setHeaderParams(Array(headerCount).fill(""));
     if (selected?.language) setLanguage(selected.language);
-  }, [name, paramCount, selected?.language]);
+  }, [name, paramCount, headerCount, selected?.language]);
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -539,6 +547,7 @@ function TemplateDialog({
           templateName: finalName,
           language,
           bodyParams: params,
+          headerParams,
           conversationId,
           leadId,
         },
@@ -604,6 +613,35 @@ function TemplateDialog({
             <Input value={language} onChange={(e) => setLanguage(e.target.value)} />
           </div>
         </div>
+
+        {selected && (bodyComp?.text || headerComp?.text) && (
+          <div className="grid gap-1 rounded-md border border-border/60 bg-surface/40 p-3 text-xs">
+            <div className="font-medium text-muted-foreground">Pré-visualização do template</div>
+            {headerComp?.text && <div className="font-semibold">{headerComp.text}</div>}
+            {bodyComp?.text && <div className="whitespace-pre-wrap">{bodyComp.text}</div>}
+            <div className="text-[11px] text-muted-foreground">
+              Variáveis: {headerCount} no título · {paramCount} no corpo
+            </div>
+          </div>
+        )}
+
+        {headerCount > 0 && (
+          <div className="grid gap-2 rounded-md border border-border/60 p-3">
+            <div className="text-xs font-medium">Parâmetros do título</div>
+            {headerParams.map((p, i) => (
+              <Input
+                key={i}
+                value={p}
+                onChange={(e) => {
+                  const next = [...headerParams];
+                  next[i] = e.target.value;
+                  setHeaderParams(next);
+                }}
+                placeholder={`{{${i + 1}}}`}
+              />
+            ))}
+          </div>
+        )}
 
         {paramCount > 0 && (
           <div className="grid gap-2 rounded-md border border-border/60 p-3">
