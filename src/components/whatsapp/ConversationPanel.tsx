@@ -164,9 +164,14 @@ export function ConversationPanel({
 
   // marcar como lido ao abrir
   useEffect(() => {
-    if (effectiveConversationId)
-      void markRead({ data: { conversationId: effectiveConversationId } });
-  }, [effectiveConversationId, markRead]);
+    if (!effectiveConversationId) return;
+    void markRead({ data: { conversationId: effectiveConversationId } }).then(() => {
+      qc.invalidateQueries({ queryKey: ["wa-conversations"] });
+      qc.invalidateQueries({ queryKey: ["lead-unread"] });
+      qc.invalidateQueries({ queryKey: ["niche-unread"] });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveConversationId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
