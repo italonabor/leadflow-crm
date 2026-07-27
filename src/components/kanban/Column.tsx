@@ -34,7 +34,7 @@ async function copyToClipboard(text: string) {
   }
 }
 
-export function LeadCard({ lead, onEdit, stage, hasUnread }: { lead: Lead; onEdit: () => void; stage?: Stage; hasUnread?: boolean }) {
+export function LeadCard({ lead, onEdit, stage, hasUnread, onOpenChat }: { lead: Lead; onEdit: () => void; stage?: Stage; hasUnread?: boolean; onOpenChat?: (lead: Lead) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { type: "lead", lead },
