@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Layers, Plus, Pencil } from "lucide-react";
-import { useNiches, useActiveNiche, type Niche } from "@/lib/niches";
+import { useNiches, useActiveNiche, useNicheUnreadCounts, type Niche } from "@/lib/niches";
 import { NicheDialog } from "@/components/kanban/NicheDialog";
 
 export function NicheNav({
@@ -15,6 +15,9 @@ export function NicheNav({
 }) {
   const navigate = useNavigate();
   const nichesQ = useNiches();
+  const unreadQ = useNicheUnreadCounts();
+  const unread = unreadQ.data ?? {};
+  const totalUnread = Object.values(unread).reduce((a, b) => a + b, 0);
   const { activeNicheId, setActiveNiche } = useActiveNiche();
   const [dialog, setDialog] = useState<{ open: boolean; niche?: Niche }>({ open: false });
 
@@ -54,10 +57,16 @@ export function NicheNav({
         >
           <span className="h-2 w-2 shrink-0 rounded-full bg-muted-foreground/50" />
           <span className="truncate">Todos os nichos</span>
+          {totalUnread > 0 && (
+            <span className="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold leading-none text-destructive-foreground">
+              {totalUnread}
+            </span>
+          )}
         </button>
 
         {niches.map((n) => {
           const active = activeNicheId === n.id;
+          const count = unread[n.id] ?? 0;
           return (
             <div
               key={n.id}
@@ -73,6 +82,11 @@ export function NicheNav({
               >
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: n.color }} />
                 <span className="truncate">{n.name}</span>
+                {count > 0 && (
+                  <span className="ml-auto shrink-0 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold leading-none text-destructive-foreground">
+                    {count}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setDialog({ open: true, niche: n })}

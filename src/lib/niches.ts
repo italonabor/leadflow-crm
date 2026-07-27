@@ -29,6 +29,41 @@ export function useNiches() {
   });
 }
 
+/** Quantidade de mensagens não lidas agrupadas por nicho (null = sem nicho) */
+export function useNicheUnreadCounts() {
+  return useQuery({
+    queryKey: ["niche-unread"],
+    refetchInterval: 20000,
+    queryFn: async () => {
+      const { data: convs, error } = await supabase
+        .from("whatsapp_conversations")
+        .select("lead_id, unread_count")
+        .gt("unread_count", 0)
+        .not("lead_id", "is", null);
+      if (error) throw error;
+      const rows = (convs ?? []) as { lead_id: string; unread_count: number }[];
+      if (!rows.length) return {} as Record<string, number>;
+
+      const { data: leads, error: e2 } = await supabase
+        .from("leads")
+        .select("id, niche_id")
+        .in("id", rows.map((r) => r.lead_id));
+      if (e2) throw e2;
+
+      const nicheByLead = new Map(
+        ((leads ?? []) as { id: string; niche_id: string | null }[]).map((l) => [l.id, l.niche_id]),
+      );
+      const counts: Record<string, number> = {};
+      for (const r of rows) {
+        const key = nicheByLead.get(r.lead_id) ?? "__none__";
+        counts[key] = (counts[key] ?? 0) + (r.unread_count || 0);
+      }
+      return counts;
+    },
+  });
+}
+
+
 /** null = "Todos os nichos" */
 export function useActiveNiche() {
   const qc = useQueryClient();
