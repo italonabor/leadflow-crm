@@ -1,8 +1,6 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { Link } from "@tanstack/react-router";
 import { Phone, Link as LinkIcon, AtSign, Briefcase, Pencil, MessageCircle, Copy, Zap } from "lucide-react";
 import type { Lead, Stage } from "./types";
-import { normalizePhone } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -159,6 +157,7 @@ export function Column({
   onEditStage,
   onEditLead,
   unreadLeadIds,
+  onOpenChat,
 }: {
   stage: Stage;
   leads: Lead[];
@@ -166,6 +165,7 @@ export function Column({
   onEditStage: () => void;
   onEditLead: (lead: Lead) => void;
   unreadLeadIds?: Set<string>;
+  onOpenChat?: (lead: Lead) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id, data: { type: "stage", stage } });
 
@@ -209,6 +209,7 @@ export function Column({
               lead={lead}
               stage={stage}
               hasUnread={unreadLeadIds?.has(lead.id)}
+              onOpenChat={onOpenChat}
               onEdit={() => onEditLead(lead)}
             />
           ))
