@@ -189,6 +189,7 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
         headerParams: z.array(z.string()).default([]),
         conversationId: z.string().uuid().optional(),
         leadId: z.string().uuid().optional(),
+        leadName: z.string().optional(),
       })
       .parse(d),
   )
@@ -200,33 +201,27 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
 
     const to = normalizePhone(data.to);
 
-    // Nome do lead preenchido automaticamente nas variáveis vazias do template
-    let leadFirstName = "";
-    if (data.leadId) {
+    // Nome do lead (do card) — usado posicionalmente na 1ª variável do corpo
+    let leadName = data.leadName ?? "";
+    if (!leadName && data.leadId) {
       const { data: l } = await supabase
         .from("leads")
         .select("nome")
         .eq("id", data.leadId)
         .maybeSingle();
-      leadFirstName = String(l?.nome ?? "").trim().split(/\s+/)[0] ?? "";
+      leadName = String(l?.nome ?? "");
     }
-    const bodyParams = data.bodyParams.map((p) =>
-      p && p.trim() ? p : leadFirstName || p,
-    );
 
-    const comps: any[] = [];
-    if (data.headerParams.length)
-      comps.push({
-        type: "header",
-        parameters: data.headerParams.map((t) => ({ type: "text", text: t })),
-      });
-    if (bodyParams.length)
-      comps.push({
-        type: "body",
-        parameters: bodyParams.map((t) => ({ type: "text", text: t })),
-      });
-    const components = comps.length ? comps : undefined;
-
+    const { buildTemplateComponents } = await import("./whatsapp-template.server");
+    const components = await buildTemplateComponents({
+      templateName: data.templateName,
+      language: data.language,
+      leadName,
+      bodyParams: data.bodyParams,
+      headerParams: data.headerParams,
+    });
+    const bodyParams =
+      components?.find((c) => c.type === "body")?.parameters.map((p) => p.text) ?? [];
 
     const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
       method: "POST",
@@ -243,6 +238,7 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
       }),
     });
     const json: any = await res.json().catch(() => ({}));
+
     if (!res.ok) {
       let msg = json?.error?.message ?? `HTTP ${res.status}`;
       if (String(json?.error?.code) === "132000")
