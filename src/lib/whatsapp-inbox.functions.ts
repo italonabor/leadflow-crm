@@ -571,6 +571,16 @@ export const sendStageAutoMessage = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Fora da janela de 24h: configure um template aprovado na etapa." };
     }
 
+    let autoComponents: any[] | undefined;
+    if (useTemplate) {
+      const { buildTemplateComponents } = await import("./whatsapp-template.server");
+      autoComponents = await buildTemplateComponents({
+        templateName: String(stage.wa_template_name),
+        language: stage.wa_template_language || "pt_BR",
+        leadName: lead.nome,
+      });
+    }
+
     const payload = useTemplate
       ? {
           messaging_product: "whatsapp",
@@ -579,9 +589,11 @@ export const sendStageAutoMessage = createServerFn({ method: "POST" })
           template: {
             name: stage.wa_template_name,
             language: { code: stage.wa_template_language || "pt_BR" },
+            ...(autoComponents ? { components: autoComponents } : {}),
           },
         }
       : { messaging_product: "whatsapp", to, type: "text", text: { preview_url: true, body } };
+
 
     const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
       method: "POST",
