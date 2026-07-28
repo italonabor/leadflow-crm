@@ -193,6 +193,7 @@ function InboxPage() {
                 key={selected.id || selected.phone}
                 conversationId={selected.id || null}
                 leadId={selected.lead_id}
+                leadName={selected.leads?.nome ?? null}
                 phone={selected.phone}
                 onConversationCreated={(id) => {
                   setSelected((s) => (s ? { ...s, id } : s));

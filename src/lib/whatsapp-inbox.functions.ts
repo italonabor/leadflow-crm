@@ -286,7 +286,7 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
           direction: "outbound",
           wa_message_id: json?.messages?.[0]?.id ?? null,
           to_phone: to,
-          body: `[template: ${data.templateName}] ${data.bodyParams.join(" | ")}`,
+          body: `[template: ${data.templateName}] ${bodyParams.join(" | ")}`,
           message_type: "template",
           template_name: data.templateName,
           status: "sent",

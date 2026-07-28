@@ -170,7 +170,7 @@ export function LeadDialog({ userId, workspaceId, stages, niches = [], defaultNi
           {lead && (
             <div className="grid gap-2">
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversa WhatsApp</div>
-              <ConversationPanel leadId={lead.id} phone={form.telefone} compact />
+              <ConversationPanel leadId={lead.id} leadName={form.nome} phone={form.telefone} compact />
             </div>
           )}
         </div>
