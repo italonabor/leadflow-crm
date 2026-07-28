@@ -560,6 +560,8 @@ function TemplateDialog({
           headerParams,
           conversationId,
           leadId,
+          leadName: leadName || undefined,
+
         },
       })) as { ok: boolean; error?: string };
       if (!r.ok) throw new Error(r.error);
