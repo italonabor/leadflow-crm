@@ -409,6 +409,7 @@ function BoardPage() {
                 key={chatLead.id}
                 conversationId={null}
                 leadId={chatLead.id}
+                leadName={chatLead.nome}
                 phone={normalizePhone(chatLead.telefone ?? "")}
               />
             </div>

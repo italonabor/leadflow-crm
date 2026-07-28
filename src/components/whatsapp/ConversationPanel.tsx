@@ -64,12 +64,14 @@ type Msg = {
 export function ConversationPanel({
   conversationId,
   leadId,
+  leadName,
   phone,
   compact = false,
   onConversationCreated,
 }: {
   conversationId?: string | null;
   leadId?: string | null;
+  leadName?: string | null;
   phone?: string | null;
   compact?: boolean;
   onConversationCreated?: (id: string) => void;
@@ -297,6 +299,7 @@ export function ConversationPanel({
             to={effectivePhone ?? ""}
             conversationId={effectiveConversationId ?? undefined}
             leadId={leadId ?? undefined}
+            leadName={leadName ?? undefined}
             onSent={() => {
               setTplOpen(false);
               qc.invalidateQueries({ queryKey: key });
@@ -500,11 +503,13 @@ function TemplateDialog({
   to,
   conversationId,
   leadId,
+  leadName,
   onSent,
 }: {
   to: string;
   conversationId?: string;
   leadId?: string;
+  leadName?: string;
   onSent: () => void;
 }) {
   const listTpl = useServerFn(listWhatsAppTemplates);
@@ -514,6 +519,9 @@ function TemplateDialog({
   const [params, setParams] = useState<string[]>([]);
   const [headerParams, setHeaderParams] = useState<string[]>([]);
   const [manualName, setManualName] = useState("");
+
+  // Primeiro nome do lead — preenchido automaticamente na 1ª variável do corpo
+  const firstName = (leadName ?? "").trim().split(/\s+/)[0] ?? "";
 
   const q = useQuery({
     queryKey: ["wa-templates"],
@@ -530,12 +538,14 @@ function TemplateDialog({
     t ? new Set(t.match(/\{\{\d+\}\}/g) ?? []).size : 0;
   const paramCount = countVars(bodyComp?.text);
   const headerCount = countVars(headerComp?.text);
+  const autoName = !!firstName && paramCount > 0;
 
   useEffect(() => {
-    setParams(Array(paramCount).fill(""));
+    setParams(Array(paramCount).fill("").map((v, i) => (i === 0 && firstName ? firstName : v)));
     setHeaderParams(Array(headerCount).fill(""));
     if (selected?.language) setLanguage(selected.language);
-  }, [name, paramCount, headerCount, selected?.language]);
+  }, [name, paramCount, headerCount, selected?.language, firstName]);
+
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -646,18 +656,28 @@ function TemplateDialog({
         {paramCount > 0 && (
           <div className="grid gap-2 rounded-md border border-border/60 p-3">
             <div className="text-xs font-medium">Parâmetros do corpo</div>
-            {params.map((p, i) => (
-              <Input
-                key={i}
-                value={p}
-                onChange={(e) => {
-                  const next = [...params];
-                  next[i] = e.target.value;
-                  setParams(next);
-                }}
-                placeholder={`{{${i + 1}}}`}
-              />
-            ))}
+            {autoName && (
+              <div className="flex items-center justify-between gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-xs">
+                <span className="text-muted-foreground">
+                  {"{{1}}"} · nome do lead (automático)
+                </span>
+                <b className="truncate">{firstName}</b>
+              </div>
+            )}
+            {params.map((p, i) =>
+              autoName && i === 0 ? null : (
+                <Input
+                  key={i}
+                  value={p}
+                  onChange={(e) => {
+                    const next = [...params];
+                    next[i] = e.target.value;
+                    setParams(next);
+                  }}
+                  placeholder={`{{${i + 1}}}`}
+                />
+              ),
+            )}
           </div>
         )}
       </div>
