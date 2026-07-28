@@ -656,18 +656,28 @@ function TemplateDialog({
         {paramCount > 0 && (
           <div className="grid gap-2 rounded-md border border-border/60 p-3">
             <div className="text-xs font-medium">Parâmetros do corpo</div>
-            {params.map((p, i) => (
-              <Input
-                key={i}
-                value={p}
-                onChange={(e) => {
-                  const next = [...params];
-                  next[i] = e.target.value;
-                  setParams(next);
-                }}
-                placeholder={`{{${i + 1}}}`}
-              />
-            ))}
+            {autoName && (
+              <div className="flex items-center justify-between gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5 text-xs">
+                <span className="text-muted-foreground">
+                  {"{{1}}"} · nome do lead (automático)
+                </span>
+                <b className="truncate">{firstName}</b>
+              </div>
+            )}
+            {params.map((p, i) =>
+              autoName && i === 0 ? null : (
+                <Input
+                  key={i}
+                  value={p}
+                  onChange={(e) => {
+                    const next = [...params];
+                    next[i] = e.target.value;
+                    setParams(next);
+                  }}
+                  placeholder={`{{${i + 1}}}`}
+                />
+              ),
+            )}
           </div>
         )}
       </div>
