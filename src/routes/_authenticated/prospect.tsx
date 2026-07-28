@@ -169,8 +169,11 @@ function ProspectPage() {
               templateName: templateName.trim(),
               language: templateLang.trim() || "pt_BR",
               bodyParams,
+              leadName: (r as any).nome ?? undefined,
+              leadId: (r as any).id && String((r as any).id).length === 36 ? (r as any).id : undefined,
             },
           })) as any;
+
         }
         setRows((prev) =>
           prev.map((x, idx) =>
