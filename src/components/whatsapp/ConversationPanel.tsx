@@ -503,11 +503,13 @@ function TemplateDialog({
   to,
   conversationId,
   leadId,
+  leadName,
   onSent,
 }: {
   to: string;
   conversationId?: string;
   leadId?: string;
+  leadName?: string;
   onSent: () => void;
 }) {
   const listTpl = useServerFn(listWhatsAppTemplates);
@@ -517,6 +519,9 @@ function TemplateDialog({
   const [params, setParams] = useState<string[]>([]);
   const [headerParams, setHeaderParams] = useState<string[]>([]);
   const [manualName, setManualName] = useState("");
+
+  // Primeiro nome do lead — preenchido automaticamente na 1ª variável do corpo
+  const firstName = (leadName ?? "").trim().split(/\s+/)[0] ?? "";
 
   const q = useQuery({
     queryKey: ["wa-templates"],
@@ -533,12 +538,14 @@ function TemplateDialog({
     t ? new Set(t.match(/\{\{\d+\}\}/g) ?? []).size : 0;
   const paramCount = countVars(bodyComp?.text);
   const headerCount = countVars(headerComp?.text);
+  const autoName = !!firstName && paramCount > 0;
 
   useEffect(() => {
-    setParams(Array(paramCount).fill(""));
+    setParams(Array(paramCount).fill("").map((v, i) => (i === 0 && firstName ? firstName : v)));
     setHeaderParams(Array(headerCount).fill(""));
     if (selected?.language) setLanguage(selected.language);
-  }, [name, paramCount, headerCount, selected?.language]);
+  }, [name, paramCount, headerCount, selected?.language, firstName]);
+
 
   const mut = useMutation({
     mutationFn: async () => {
