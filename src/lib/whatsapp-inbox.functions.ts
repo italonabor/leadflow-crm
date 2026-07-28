@@ -199,18 +199,34 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
     if (!token || !phoneId) return { ok: false as const, error: "WhatsApp não configurado" };
 
     const to = normalizePhone(data.to);
+
+    // Nome do lead preenchido automaticamente nas variáveis vazias do template
+    let leadFirstName = "";
+    if (data.leadId) {
+      const { data: l } = await supabase
+        .from("leads")
+        .select("nome")
+        .eq("id", data.leadId)
+        .maybeSingle();
+      leadFirstName = String(l?.nome ?? "").trim().split(/\s+/)[0] ?? "";
+    }
+    const bodyParams = data.bodyParams.map((p) =>
+      p && p.trim() ? p : leadFirstName || p,
+    );
+
     const comps: any[] = [];
     if (data.headerParams.length)
       comps.push({
         type: "header",
         parameters: data.headerParams.map((t) => ({ type: "text", text: t })),
       });
-    if (data.bodyParams.length)
+    if (bodyParams.length)
       comps.push({
         type: "body",
-        parameters: data.bodyParams.map((t) => ({ type: "text", text: t })),
+        parameters: bodyParams.map((t) => ({ type: "text", text: t })),
       });
     const components = comps.length ? comps : undefined;
+
 
     const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
       method: "POST",
