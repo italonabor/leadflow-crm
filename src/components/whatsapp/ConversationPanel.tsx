@@ -32,6 +32,7 @@ import {
   Check,
   Download,
   Play,
+  Copy,
 } from "lucide-react";
 import {
   listConversationMessages,
