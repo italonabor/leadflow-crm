@@ -41,12 +41,27 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
 
       POST: async ({ request }) => {
         const raw = await request.text();
+
+        // Segurança: só aceitamos payloads assinados pela Meta.
+        const appSecret = process.env.WHATSAPP_APP_SECRET;
+        if (!appSecret) {
+          console.error(
+            "[whatsapp-webhook] WHATSAPP_APP_SECRET não configurado — payload recusado",
+          );
+          return new Response("webhook not configured", { status: 503 });
+        }
+        const signature = request.headers.get("x-hub-signature-256");
+        if (!verifyMetaSignature(raw, signature, appSecret)) {
+          return new Response("invalid signature", { status: 401 });
+        }
+
         let payload: unknown;
         try {
           payload = JSON.parse(raw);
         } catch {
           return new Response("bad json", { status: 400 });
         }
+
 
         const { supabaseAdmin } = await import(
           "@/integrations/supabase/client.server"
