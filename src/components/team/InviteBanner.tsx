@@ -9,6 +9,7 @@ type PendingInvite = {
   workspace_id: string;
   role: "admin" | "atendente";
   email: string;
+  token: string;
   expires_at: string;
   accepted_at: string | null;
   workspaces: { name: string } | null;
