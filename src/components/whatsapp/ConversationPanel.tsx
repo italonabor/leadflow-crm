@@ -534,8 +534,19 @@ function TemplateDialog({
   const headerComp = selected?.components?.find(
     (c: any) => c.type === "HEADER" && (c.format ?? "TEXT") === "TEXT",
   );
-  const countVars = (t?: string) =>
-    t ? new Set(t.match(/\{\{\d+\}\}/g) ?? []).size : 0;
+  // Aceita placeholders numéricos ({{1}}) e nomeados ({{nome}}).
+  const countVars = (t?: string) => {
+    if (!t) return 0;
+    const found = t.match(/\{\{\s*[^}\s][^}]*\s*\}\}/g) ?? [];
+    if (!found.length) return 0;
+    const nums = found
+      .map((m) => Number(m.replace(/[{}\s]/g, "")))
+      .filter((n) => Number.isFinite(n));
+    // Numérico: usa o maior índice. Nomeado: conta os distintos.
+    return nums.length === found.length
+      ? Math.max(...nums)
+      : new Set(found.map((m) => m.replace(/\s+/g, ""))).size;
+  };
   const paramCount = countVars(bodyComp?.text);
   const headerCount = countVars(headerComp?.text);
   const autoName = !!firstName && paramCount > 0;

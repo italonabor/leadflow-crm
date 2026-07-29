@@ -20,10 +20,14 @@ type MetaComponent = { type: string; parameters: { type: "text"; text: string }[
 
 function countVars(text?: string): number {
   if (!text) return 0;
-  const found = text.match(/\{\{\s*\d+\s*\}\}/g);
+  // Aceita {{1}} (posicional) e {{nome}} (nomeado) — a Meta conta ambos.
+  const found = text.match(/\{\{\s*[^}\s][^}]*\s*\}\}/g);
   if (!found) return 0;
-  const nums = found.map((m) => Number(m.replace(/\D/g, "")));
-  return Math.max(...nums);
+  const nums = found
+    .map((m) => Number(m.replace(/[{}\s]/g, "")))
+    .filter((n) => Number.isFinite(n));
+  if (nums.length === found.length) return Math.max(...nums);
+  return new Set(found.map((m) => m.replace(/\s+/g, ""))).size;
 }
 
 /** Busca a definição aprovada do template (retorna null se não for possível). */
