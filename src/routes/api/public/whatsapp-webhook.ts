@@ -127,16 +127,30 @@ function normalizePhone(raw: string): string {
   return d;
 }
 
-function extractBody(m: NonNullable<
-  NonNullable<NonNullable<WebhookPayload["entry"]>[number]["changes"]>[number]["value"]
->["messages"] extends Array<infer T> | undefined ? T : never): string {
+function extractBody(m: unknown): string {
   if (!m) return "";
   const anyM = m as any;
+
+  // Respostas de botão (quick reply) e listas interativas
+  const interactive = anyM.interactive ?? {};
+  const interactiveText =
+    interactive?.button_reply?.title ??
+    interactive?.button_reply?.id ??
+    interactive?.list_reply?.title ??
+    interactive?.list_reply?.description ??
+    interactive?.nfm_reply?.body ??
+    null;
+
   return (
     anyM.text?.body ??
+    // Botão de template (quick reply) → payload em button.text
+    anyM.button?.text ??
+    anyM.button?.payload ??
+    interactiveText ??
     anyM.image?.caption ??
     anyM.document?.caption ??
-    anyM.button?.text ??
+    anyM.video?.caption ??
+    anyM.reaction?.emoji ??
     ({
       audio: "🎤 Áudio",
       voice: "🎤 Áudio",
@@ -145,10 +159,12 @@ function extractBody(m: NonNullable<
       document: "📎 Documento",
       sticker: "Sticker",
       location: "📍 Localização",
+      contacts: "👤 Contato",
     } as Record<string, string>)[String(anyM.type)] ??
     (anyM.type ? `[${anyM.type}]` : "")
   );
 }
+
 
 async function handleWebhook(payload: unknown, admin: any) {
   const p = payload as WebhookPayload;
