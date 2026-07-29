@@ -39,6 +39,8 @@ export const Route = createFileRoute("/_authenticated/prospect")({
   component: ProspectPage,
 });
 
+import { normalizeBraces } from "@/lib/template-vars";
+
 type Recipient = { id: string; nome: string; telefone: string };
 type SendStatus = "pending" | "sending" | "sent" | "failed";
 type SendRow = Recipient & { status: SendStatus; error?: string; messageId?: string };
