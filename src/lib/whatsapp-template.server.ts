@@ -8,6 +8,8 @@
  * na primeira posição do corpo quando nada foi informado.
  */
 
+import { countVars } from "./template-vars";
+
 type BuildArgs = {
   templateName: string;
   language: string;
