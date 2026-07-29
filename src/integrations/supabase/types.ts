@@ -475,6 +475,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_workspace_invite: { Args: { _token: string }; Returns: string }
       find_lead_by_phone: {
         Args: { _phone: string; _workspace_id: string }
         Returns: string

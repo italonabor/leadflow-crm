@@ -9,6 +9,7 @@ type PendingInvite = {
   workspace_id: string;
   role: "admin" | "atendente";
   email: string;
+  token: string;
   expires_at: string;
   accepted_at: string | null;
   workspaces: { name: string } | null;
@@ -22,7 +23,7 @@ export function InviteBanner({ userId }: { userId: string }) {
     queryFn: async (): Promise<PendingInvite[]> => {
       const { data, error } = await supabase
         .from("workspace_invites")
-        .select("id, workspace_id, role, email, expires_at, accepted_at, workspaces(name)")
+        .select("id, workspace_id, role, email, token, expires_at, accepted_at, workspaces(name)")
         .is("accepted_at", null)
         .gt("expires_at", new Date().toISOString());
       if (error) throw error;
@@ -32,17 +33,11 @@ export function InviteBanner({ userId }: { userId: string }) {
 
   const accept = useMutation({
     mutationFn: async (inv: PendingInvite) => {
-      const { error: mErr } = await supabase.from("workspace_members").insert({
-        workspace_id: inv.workspace_id,
-        user_id: userId,
-        role: inv.role,
+      // Aceite validado no servidor: confere e-mail, expiração e uso único.
+      const { error } = await supabase.rpc("accept_workspace_invite", {
+        _token: inv.token,
       });
-      if (mErr && !/duplicate|unique/i.test(mErr.message)) throw mErr;
-      const { error: uErr } = await supabase
-        .from("workspace_invites")
-        .update({ accepted_at: new Date().toISOString() })
-        .eq("id", inv.id);
-      if (uErr) throw uErr;
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Convite aceito! Você agora faz parte do workspace.");
