@@ -237,8 +237,28 @@ export function ConversationPanel({
       className={`flex ${compact ? "h-[420px]" : "h-full"} flex-col rounded-lg border border-border/60 bg-card`}
     >
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="font-mono text-muted-foreground">{effectivePhone ?? "—"}</span>
+        <div className="flex min-w-0 items-center gap-2 text-sm">
+          {leadName ? (
+            <button
+              type="button"
+              onClick={() => copyValue(leadName, "Nome copiado")}
+              className="inline-flex max-w-[180px] items-center gap-1 truncate rounded px-1 font-medium hover:bg-muted"
+              title="Copiar nome"
+            >
+              <span className="truncate">{leadName}</span>
+              <Copy className="h-3 w-3 shrink-0 opacity-60" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={!effectivePhone}
+            onClick={() => effectivePhone && copyValue(effectivePhone, "Telefone copiado")}
+            className="inline-flex items-center gap-1 rounded px-1 font-mono text-muted-foreground hover:bg-muted disabled:opacity-50"
+            title="Copiar telefone"
+          >
+            {effectivePhone ?? "—"}
+            {effectivePhone ? <Copy className="h-3 w-3 opacity-60" /> : null}
+          </button>
         </div>
         <Window24hBadge
           open={window24h.open}
