@@ -47,6 +47,20 @@ import {
 import { MessageComposer } from "./MessageComposer";
 import { countVars } from "@/lib/template-vars";
 
+async function copyValue(value: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch {
+    const el = document.createElement("textarea");
+    el.value = value;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    el.remove();
+  }
+  toast.success(label);
+}
+
 type Msg = {
   id: string;
   direction: "inbound" | "outbound";
