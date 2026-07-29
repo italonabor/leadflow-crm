@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
         const raw = await request.text();
 
         // Segurança: só aceitamos payloads assinados pela Meta.
-        const appSecret = process.env.WHATSAPP_APP_SECRET;
+        const appSecret = process.env.WHATSAPP_APP_SECRET?.trim();
         if (!appSecret) {
           console.error(
             "[whatsapp-webhook] WHATSAPP_APP_SECRET não configurado — payload recusado",
@@ -52,8 +52,13 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
         }
         const signature = request.headers.get("x-hub-signature-256");
         if (!verifyMetaSignature(raw, signature, appSecret)) {
+          console.error(
+            "[whatsapp-webhook] assinatura inválida",
+            JSON.stringify({ hasHeader: Boolean(signature), bytes: raw.length }),
+          );
           return new Response("invalid signature", { status: 401 });
         }
+
 
         let payload: unknown;
         try {
