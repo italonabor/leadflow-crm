@@ -44,6 +44,7 @@ import {
   fetchWhatsAppMedia,
 } from "@/lib/whatsapp-inbox.functions";
 import { MessageComposer } from "./MessageComposer";
+import { countVars } from "@/lib/template-vars";
 
 type Msg = {
   id: string;
