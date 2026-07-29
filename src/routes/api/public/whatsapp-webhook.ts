@@ -1,4 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createHmac, timingSafeEqual } from "crypto";
+
+/** Valida o header X-Hub-Signature-256 enviado pela Meta. */
+function verifyMetaSignature(raw: string, header: string | null, appSecret: string): boolean {
+  if (!header || !header.startsWith("sha256=")) return false;
+  const expected = createHmac("sha256", appSecret).update(raw, "utf8").digest("hex");
+  const received = header.slice("sha256=".length).trim();
+  const a = Buffer.from(received, "utf8");
+  const b = Buffer.from(expected, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 /**
  * Webhook do WhatsApp Cloud API (Meta).
