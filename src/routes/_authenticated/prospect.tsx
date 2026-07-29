@@ -39,12 +39,15 @@ export const Route = createFileRoute("/_authenticated/prospect")({
   component: ProspectPage,
 });
 
+import { normalizeBraces } from "@/lib/template-vars";
+
 type Recipient = { id: string; nome: string; telefone: string };
 type SendStatus = "pending" | "sending" | "sent" | "failed";
 type SendRow = Recipient & { status: SendStatus; error?: string; messageId?: string };
 
 function renderTemplate(tpl: string, lead: { nome: string; telefone: string }): string {
-  return tpl
+  // {{x}} e {x} são tratados igualmente.
+  return normalizeBraces(tpl)
     .replace(/\{nome\}/gi, (lead.nome || "").trim())
     .replace(/\{primeiro_nome\}/gi, (lead.nome || "").trim().split(/\s+/)[0] ?? "")
     .replace(/\{telefone\}/gi, lead.telefone || "");

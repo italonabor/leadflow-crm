@@ -32,6 +32,7 @@ import {
   Check,
   Download,
   Play,
+  Copy,
 } from "lucide-react";
 import {
   listConversationMessages,
@@ -44,6 +45,21 @@ import {
   fetchWhatsAppMedia,
 } from "@/lib/whatsapp-inbox.functions";
 import { MessageComposer } from "./MessageComposer";
+import { countVars } from "@/lib/template-vars";
+
+async function copyValue(value: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch {
+    const el = document.createElement("textarea");
+    el.value = value;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    el.remove();
+  }
+  toast.success(label);
+}
 
 type Msg = {
   id: string;
@@ -235,8 +251,28 @@ export function ConversationPanel({
       className={`flex ${compact ? "h-[420px]" : "h-full"} flex-col rounded-lg border border-border/60 bg-card`}
     >
       <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="font-mono text-muted-foreground">{effectivePhone ?? "—"}</span>
+        <div className="flex min-w-0 items-center gap-2 text-sm">
+          {leadName ? (
+            <button
+              type="button"
+              onClick={() => copyValue(leadName, "Nome copiado")}
+              className="inline-flex max-w-[180px] items-center gap-1 truncate rounded px-1 font-medium hover:bg-muted"
+              title="Copiar nome"
+            >
+              <span className="truncate">{leadName}</span>
+              <Copy className="h-3 w-3 shrink-0 opacity-60" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={!effectivePhone}
+            onClick={() => effectivePhone && copyValue(effectivePhone, "Telefone copiado")}
+            className="inline-flex items-center gap-1 rounded px-1 font-mono text-muted-foreground hover:bg-muted disabled:opacity-50"
+            title="Copiar telefone"
+          >
+            {effectivePhone ?? "—"}
+            {effectivePhone ? <Copy className="h-3 w-3 opacity-60" /> : null}
+          </button>
         </div>
         <Window24hBadge
           open={window24h.open}
@@ -534,19 +570,7 @@ function TemplateDialog({
   const headerComp = selected?.components?.find(
     (c: any) => c.type === "HEADER" && (c.format ?? "TEXT") === "TEXT",
   );
-  // Aceita placeholders numéricos ({{1}}) e nomeados ({{nome}}).
-  const countVars = (t?: string) => {
-    if (!t) return 0;
-    const found = t.match(/\{\{\s*[^}\s][^}]*\s*\}\}/g) ?? [];
-    if (!found.length) return 0;
-    const nums = found
-      .map((m) => Number(m.replace(/[{}\s]/g, "")))
-      .filter((n) => Number.isFinite(n));
-    // Numérico: usa o maior índice. Nomeado: conta os distintos.
-    return nums.length === found.length
-      ? Math.max(...nums)
-      : new Set(found.map((m) => m.replace(/\s+/g, ""))).size;
-  };
+  // Conta {1}/{nome} e {{1}}/{{nome}} como o mesmo placeholder.
   const paramCount = countVars(bodyComp?.text);
   const headerCount = countVars(headerComp?.text);
   const autoName = !!firstName && paramCount > 0;
