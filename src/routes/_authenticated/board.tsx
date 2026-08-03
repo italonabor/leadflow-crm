@@ -97,6 +97,14 @@ function BoardPage() {
         { event: "*", schema: "public", table: "leads", filter: `workspace_id=eq.${workspaceId}` },
         () => qc.invalidateQueries({ queryKey: ["leads", user.id] }),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "whatsapp_conversations", filter: `workspace_id=eq.${workspaceId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["lead-unread", user.id] });
+          qc.invalidateQueries({ queryKey: ["leads", user.id] });
+        },
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(ch);
