@@ -62,7 +62,10 @@ function BoardPage() {
   const leadsQ = useQuery({
     queryKey: ["leads", user.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("leads").select("*").order("position");
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .order("position", { ascending: false });
       if (error) throw error;
       return data as Lead[];
     },
