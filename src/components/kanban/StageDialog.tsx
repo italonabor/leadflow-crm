@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,11 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
+import { listWhatsAppTemplates } from "@/lib/whatsapp-inbox.functions";
 import type { Stage } from "./types";
 
 const PRESET_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#0ea5e9", "#ef4444", "#14b8a6"];
+
 
 export function StageDialog({
   userId,
@@ -37,6 +41,18 @@ export function StageDialog({
   const [autoSend, setAutoSend] = useState(stage?.auto_send_whatsapp ?? false);
   const [waTemplateName, setWaTemplateName] = useState(stage?.wa_template_name ?? "");
   const [waTemplateLang, setWaTemplateLang] = useState(stage?.wa_template_language ?? "pt_BR");
+
+  const fetchTemplates = useServerFn(listWhatsAppTemplates);
+  const templatesQuery = useQuery({
+    queryKey: ["wa-templates"],
+    queryFn: () => fetchTemplates({ data: {} } as never),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+  const templates: Array<{ name: string; language: string }> =
+    templatesQuery.data && (templatesQuery.data as any).ok ? (templatesQuery.data as any).templates ?? [] : [];
+
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -138,11 +154,44 @@ export function StageDialog({
                 <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
                   <div className="grid gap-2">
                     <Label>Template aprovado (fora das 24h)</Label>
-                    <Input
-                      value={waTemplateName}
-                      onChange={(e) => setWaTemplateName(e.target.value)}
-                      placeholder="ex: hello_world"
-                    />
+                    {templatesQuery.isLoading ? (
+                      <div className="flex h-10 items-center gap-2 rounded-md border border-border/60 px-3 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Carregando templates...
+                      </div>
+                    ) : templates.length > 0 ? (
+                      <Select
+                        value={waTemplateName || "none"}
+                        onValueChange={(v) => {
+                          if (v === "none") return setWaTemplateName("");
+                          setWaTemplateName(v);
+                          const t = templates.find((x) => x.name === v);
+                          if (t?.language) setWaTemplateLang(t.language);
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecione um template" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem template</SelectItem>
+                          {templates.map((t) => (
+                            <SelectItem key={`${t.name}-${t.language}`} value={t.name}>
+                              {t.name} ({t.language})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <>
+                        <Input
+                          value={waTemplateName}
+                          onChange={(e) => setWaTemplateName(e.target.value)}
+                          placeholder="ex: hello_world"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {templatesQuery.data && "error" in templatesQuery.data
+                            ? String(templatesQuery.data.error)
+                            : "Nenhum template aprovado encontrado — digite o nome manualmente."}
+                        </p>
+                      </>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label>Idioma</Label>
@@ -150,6 +199,7 @@ export function StageDialog({
                   </div>
                 </div>
               )}
+
 
               <div className="grid gap-2">
                 <Label>Webhook n8n (opcional)</Label>
