@@ -641,6 +641,9 @@ export const sendStageAutoMessage = createServerFn({ method: "POST" })
           last_message_preview: preview.slice(0, 200),
         })
         .eq("id", conversationId);
+
+      // Mantém o lead no topo do pipeline após automação de etapa
+      await supabase.from("leads").update({ position: Date.now() }).eq("id", lead.id);
     }
 
     return { ok: true as const, sent: useTemplate ? "template" : "text", stage: stage.name };
