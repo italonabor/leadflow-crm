@@ -142,11 +142,44 @@ export function StageDialog({
                 <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
                   <div className="grid gap-2">
                     <Label>Template aprovado (fora das 24h)</Label>
-                    <Input
-                      value={waTemplateName}
-                      onChange={(e) => setWaTemplateName(e.target.value)}
-                      placeholder="ex: hello_world"
-                    />
+                    {templatesQuery.isLoading ? (
+                      <div className="flex h-10 items-center gap-2 rounded-md border border-border/60 px-3 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Carregando templates...
+                      </div>
+                    ) : templates.length > 0 ? (
+                      <Select
+                        value={waTemplateName || "none"}
+                        onValueChange={(v) => {
+                          if (v === "none") return setWaTemplateName("");
+                          setWaTemplateName(v);
+                          const t = templates.find((x) => x.name === v);
+                          if (t?.language) setWaTemplateLang(t.language);
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Selecione um template" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem template</SelectItem>
+                          {templates.map((t) => (
+                            <SelectItem key={`${t.name}-${t.language}`} value={t.name}>
+                              {t.name} ({t.language})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <>
+                        <Input
+                          value={waTemplateName}
+                          onChange={(e) => setWaTemplateName(e.target.value)}
+                          placeholder="ex: hello_world"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {templatesQuery.data && "error" in templatesQuery.data
+                            ? String(templatesQuery.data.error)
+                            : "Nenhum template aprovado encontrado — digite o nome manualmente."}
+                        </p>
+                      </>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label>Idioma</Label>
@@ -154,6 +187,7 @@ export function StageDialog({
                   </div>
                 </div>
               )}
+
 
               <div className="grid gap-2">
                 <Label>Webhook n8n (opcional)</Label>
