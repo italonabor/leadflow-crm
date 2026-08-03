@@ -163,12 +163,8 @@ function BoardPage() {
       arr.push(l);
       map.set(l.stage_id, arr);
     });
-    // Leads com mensagens novas sobem para o topo da coluna
-    map.forEach((arr) => {
-      arr.sort((a, b) => Number(unreadLeadIds.has(b.id)) - Number(unreadLeadIds.has(a.id)));
-    });
     return map;
-  }, [visibleLeads, unreadLeadIds]);
+  }, [visibleLeads]);
 
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
