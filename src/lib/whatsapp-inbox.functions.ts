@@ -171,6 +171,11 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
           last_message_preview: data.body.slice(0, 200),
         })
         .eq("id", conversationId);
+
+      // Mantém o lead no topo do pipeline após envio
+      if (leadId) {
+        await supabase.from("leads").update({ position: Date.now() }).eq("id", leadId);
+      }
     }
 
     return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
