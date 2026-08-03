@@ -87,10 +87,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "Kanban de leads com importação/exportação Excel e etapas customizáveis.",
+          "CRM Kanban para prospecção: importe leads via Excel, arraste entre etapas do funil e feche mais negócios.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Prospecta — CRM Kanban de Leads" },
+      { name: "twitter:description", content: "CRM Kanban para prospecção: importe leads via Excel, arraste entre etapas do funil e feche mais negócios." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1e1aaea0-4894-40a7-8095-9dda7ba07c23/id-preview-927c1657--9a4e1c3d-d26a-4f44-9ec9-da3e579956db.lovable.app-1785771390328.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1e1aaea0-4894-40a7-8095-9dda7ba07c23/id-preview-927c1657--9a4e1c3d-d26a-4f44-9ec9-da3e579956db.lovable.app-1785771390328.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
