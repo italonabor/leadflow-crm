@@ -301,6 +301,11 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
             last_message_preview: `[template] ${data.templateName}`,
           })
           .eq("id", conversationId);
+
+        // Mantém o lead no topo do pipeline após envio de template
+        if (leadId) {
+          await supabase.from("leads").update({ position: Date.now() }).eq("id", leadId);
+        }
       }
     }
 
