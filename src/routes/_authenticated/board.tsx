@@ -84,6 +84,22 @@ function BoardPage() {
   const unreadLeadIds = unreadQ.data ?? new Set<string>();
   const [chatLead, setChatLead] = useState<Lead | null>(null);
 
+  // Atualiza o pipeline em tempo real quando a posição de um lead muda (ex: mensagem recebida/enviada)
+  useEffect(() => {
+    if (!workspaceId) return;
+    const ch = supabase
+      .channel(`leads-${workspaceId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads", filter: `workspace_id=eq.${workspaceId}` },
+        () => qc.invalidateQueries({ queryKey: ["leads", user.id] }),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [workspaceId, user.id]);
+
   const moveLead = useMutation({
     mutationFn: async ({ id, stage_id }: { id: string; stage_id: string }) => {
       const { error } = await supabase.from("leads").update({ stage_id, position: Date.now() }).eq("id", id);
