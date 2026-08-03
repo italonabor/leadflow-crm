@@ -42,6 +42,18 @@ export function StageDialog({
   const [waTemplateName, setWaTemplateName] = useState(stage?.wa_template_name ?? "");
   const [waTemplateLang, setWaTemplateLang] = useState(stage?.wa_template_language ?? "pt_BR");
 
+  const fetchTemplates = useServerFn(listWhatsAppTemplates);
+  const templatesQuery = useQuery({
+    queryKey: ["wa-templates"],
+    queryFn: () => fetchTemplates({ data: {} } as never),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+  const templates: Array<{ name: string; language: string }> =
+    templatesQuery.data && (templatesQuery.data as any).ok ? (templatesQuery.data as any).templates ?? [] : [];
+
+
+
   const save = useMutation({
     mutationFn: async () => {
       if (!name.trim()) throw new Error("Nome é obrigatório");
