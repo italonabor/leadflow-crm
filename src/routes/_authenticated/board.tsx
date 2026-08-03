@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
@@ -84,6 +84,22 @@ function BoardPage() {
   const unreadLeadIds = unreadQ.data ?? new Set<string>();
   const [chatLead, setChatLead] = useState<Lead | null>(null);
 
+  // Atualiza o pipeline em tempo real quando a posição de um lead muda (ex: mensagem recebida/enviada)
+  useEffect(() => {
+    if (!workspaceId) return;
+    const ch = supabase
+      .channel(`leads-${workspaceId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads", filter: `workspace_id=eq.${workspaceId}` },
+        () => qc.invalidateQueries({ queryKey: ["leads", user.id] }),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [workspaceId, user.id]);
+
   const moveLead = useMutation({
     mutationFn: async ({ id, stage_id }: { id: string; stage_id: string }) => {
       const { error } = await supabase.from("leads").update({ stage_id, position: Date.now() }).eq("id", id);
@@ -163,12 +179,8 @@ function BoardPage() {
       arr.push(l);
       map.set(l.stage_id, arr);
     });
-    // Leads com mensagens novas sobem para o topo da coluna
-    map.forEach((arr) => {
-      arr.sort((a, b) => Number(unreadLeadIds.has(b.id)) - Number(unreadLeadIds.has(a.id)));
-    });
     return map;
-  }, [visibleLeads, unreadLeadIds]);
+  }, [visibleLeads]);
 
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));

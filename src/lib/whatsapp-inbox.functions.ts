@@ -171,6 +171,11 @@ export const sendTextInConversation = createServerFn({ method: "POST" })
           last_message_preview: data.body.slice(0, 200),
         })
         .eq("id", conversationId);
+
+      // Mantém o lead no topo do pipeline após envio
+      if (leadId) {
+        await supabase.from("leads").update({ position: Date.now() }).eq("id", leadId);
+      }
     }
 
     return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
@@ -296,6 +301,11 @@ export const sendTemplateInConversation = createServerFn({ method: "POST" })
             last_message_preview: `[template] ${data.templateName}`,
           })
           .eq("id", conversationId);
+
+        // Mantém o lead no topo do pipeline após envio de template
+        if (leadId) {
+          await supabase.from("leads").update({ position: Date.now() }).eq("id", leadId);
+        }
       }
     }
 
@@ -443,6 +453,11 @@ export const sendAudioInConversation = createServerFn({ method: "POST" })
           last_message_preview: "[áudio]",
         })
         .eq("id", conversationId);
+
+      // Mantém o lead no topo do pipeline após envio de áudio
+      if (leadId) {
+        await supabase.from("leads").update({ position: Date.now() }).eq("id", leadId);
+      }
     }
 
     return { ok: true as const, messageId: json?.messages?.[0]?.id ?? null, conversationId };
@@ -626,6 +641,9 @@ export const sendStageAutoMessage = createServerFn({ method: "POST" })
           last_message_preview: preview.slice(0, 200),
         })
         .eq("id", conversationId);
+
+      // Mantém o lead no topo do pipeline após automação de etapa
+      await supabase.from("leads").update({ position: Date.now() }).eq("id", lead.id);
     }
 
     return { ok: true as const, sent: useTemplate ? "template" : "text", stage: stage.name };

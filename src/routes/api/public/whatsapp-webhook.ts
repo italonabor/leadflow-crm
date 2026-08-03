@@ -234,6 +234,11 @@ async function handleWebhook(payload: unknown, admin: any) {
             lead_id: leadId ?? undefined,
           })
           .eq("id", conversationId);
+
+        // Sobe o lead para o topo do pipeline quando chega mensagem nova
+        if (leadId) {
+          await admin.from("leads").update({ position: Date.now() }).eq("id", leadId);
+        }
       }
 
       for (const st of statuses) {
